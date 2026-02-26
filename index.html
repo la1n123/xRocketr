@@ -1,134 +1,354 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>xRocket</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-</head>
-<body>
-    <div class="app">
-        <!-- Шапка -->
-        <div class="header">
-            <div class="balance-row">
-                <span class="balance-number">0</span>
-                <span class="balance-currency">OTON</span>
-            </div>
-            <div class="header-stats">
-                <span>3 collections</span>
-                <span class="commission">Commission 0%</span>
-            </div>
-        </div>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
 
-        <!-- Вкладки -->
-        <div class="tabs">
-            <button class="tab active">All items</button>
-            <button class="tab">Collections</button>
-            <button class="tab">Bundles</button>
-        </div>
+body {
+    background: #000;
+    color: #fff;
+}
 
-        <!-- Quick find -->
-        <div class="quick-find">
-            <i class="fas fa-search"></i>
-            <span>Quick find</span>
-        </div>
+.app {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 20px;
+    padding-bottom: 90px;
+    min-height: 100vh;
+    background: #000;
+}
 
-        <!-- Кнопки -->
-        <div class="menu-grid">
-            <div class="menu-item" data-action="collection">
-                <i class="fas fa-layer-group"></i>
-                <span>Collection</span>
-            </div>
-            <div class="menu-item" data-action="model">
-                <i class="fas fa-cube"></i>
-                <span>Model</span>
-            </div>
-            <div class="menu-item" data-action="back">
-                <i class="fas fa-arrow-left"></i>
-                <span>Back</span>
-            </div>
-            <div class="menu-item" data-action="store">
-                <i class="fas fa-store"></i>
-                <span>Store</span>
-            </div>
-            <div class="menu-item" data-action="gifts" id="myGiftsBtn">
-                <i class="fas fa-gift"></i>
-                <span>My gifts</span>
-            </div>
-            <div class="menu-item" data-action="season">
-                <i class="fas fa-calendar"></i>
-                <span>Season</span>
-            </div>
-        </div>
+/* Шапка */
+.header {
+    margin-bottom: 30px;
+}
 
-        <!-- НИЖНЯЯ НАВИГАЦИЯ - NFT, My gift, Profile -->
-        <div class="bottom-nav">
-            <div class="nav-item" id="nftBtn">
-                <i class="fas fa-image"></i>
-                <span>NFT</span>
-            </div>
-            <div class="nav-item" id="giftBtn">
-                <i class="fas fa-gift"></i>
-                <span>My gift</span>
-            </div>
-            <div class="nav-item" id="profileBtn">
-                <i class="fas fa-user"></i>
-                <span>Profile</span>
-            </div>
-        </div>
+.balance-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 5px;
+}
 
-        <!-- Страница My Gifts -->
-        <div id="giftsPage" style="display: none;">
-            <div class="page-header">
-                <button class="back-btn" id="backFromGifts">←</button>
-                <h2>My gifts</h2>
-            </div>
-            <div class="gifts-content">
-                <div class="gifts-zero">0</div>
-                <div class="gifts-buttons">
-                    <button class="replenish-btn" id="replenishBtn">Пополнить</button>
-                    <button class="withdraw-btn" id="withdrawBtn">Вывести</button>
-                </div>
-            </div>
-        </div>
+.balance-number {
+    font-size: 48px;
+    font-weight: bold;
+    color: #fff;
+}
 
-        <!-- Страница Profile -->
-        <div id="profilePage" style="display: none;">
-            <div class="page-header">
-                <button class="back-btn" id="backFromProfile">←</button>
-                <h2>Profile</h2>
-            </div>
-            <div class="profile-content">
-                <div class="profile-info">
-                    <p><strong>NFT:</strong> 5</p>
-                    <p><strong>Коллекций:</strong> 3</p>
-                    <p><strong>Подарков:</strong> 2</p>
-                    <p><strong>Зарегистрирован:</strong> 12.03.2024</p>
-                </div>
-                <div class="transactions">
-                    <h3>Последние транзакции</h3>
-                    <p>• Получено NFT (14:30)</p>
-                    <p>• Подарок от @friend (вчера)</p>
-                    <p>• Пополнение (12.03)</p>
-                </div>
-            </div>
-        </div>
+.balance-currency {
+    font-size: 24px;
+    color: #00ff88;
+    font-weight: 600;
+}
 
-        <!-- Модалка менеджера -->
-        <div id="managerModal" style="display: none;">
-            <div class="modal-overlay">
-                <div class="modal-box">
-                    <h3>Пополнение</h3>
-                    <p>Напишите менеджеру:</p>
-                    <div class="manager-link" id="managerLink">@ManagerKupiKod</div>
-                    <button class="close-modal" id="closeModal">Закрыть</button>
-                </div>
-            </div>
-        </div>
-    </div>
+.header-stats {
+    display: flex;
+    gap: 15px;
+    color: #666;
+    font-size: 14px;
+}
 
-    <script src="script.js"></script>
-</body>
-</html>
+.commission {
+    color: #00ff88;
+}
+
+/* Вкладки */
+.tabs {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #222;
+    padding-bottom: 10px;
+}
+
+.tab {
+    background: none;
+    border: none;
+    color: #666;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 5px 0;
+}
+
+.tab.active {
+    color: #00ff88;
+    border-bottom: 2px solid #00ff88;
+}
+
+/* Quick find */
+.quick-find {
+    background: #111;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 30px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #666;
+    cursor: pointer;
+}
+
+.quick-find i {
+    color: #00ff88;
+}
+
+/* Сетка меню */
+.menu-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 30px;
+}
+
+.menu-item {
+    background: #111;
+    border-radius: 10px;
+    padding: 20px 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.menu-item:hover {
+    background: #1a1a1a;
+}
+
+.menu-item i {
+    font-size: 24px;
+    color: #00ff88;
+}
+
+.menu-item span {
+    font-size: 12px;
+    color: #fff;
+}
+
+/* НИЖНЯЯ НАВИГАЦИЯ */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-width: 480px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-around;
+    padding: 15px 20px;
+    background: #111;
+    border-top: 1px solid #222;
+    z-index: 50;
+}
+
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    color: #666;
+    transition: color 0.2s;
+}
+
+.nav-item:hover {
+    color: #00ff88;
+}
+
+.nav-item i {
+    font-size: 22px;
+}
+
+.nav-item span {
+    font-size: 12px;
+}
+
+/* Страница My gifts */
+#giftsPage {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #000;
+    padding: 20px;
+    z-index: 100;
+}
+
+.page-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 50px;
+}
+
+.back-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 20px;
+    background: #111;
+    border: none;
+    color: #00ff88;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.page-header h2 {
+    font-size: 24px;
+    color: #fff;
+}
+
+.gifts-content {
+    text-align: center;
+    padding-top: 50px;
+}
+
+.gifts-zero {
+    font-size: 72px;
+    font-weight: bold;
+    color: #00ff88;
+    margin-bottom: 40px;
+}
+
+.gifts-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.replenish-btn, .withdraw-btn {
+    padding: 15px 30px;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.replenish-btn {
+    background: #00ff88;
+    color: #000;
+}
+
+.withdraw-btn {
+    background: #111;
+    color: #fff;
+    border: 1px solid #333;
+}
+
+/* Страница Profile */
+#profilePage {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #000;
+    padding: 20px;
+    z-index: 100;
+    overflow-y: auto;
+}
+
+.profile-content {
+    margin-top: 20px;
+}
+
+.profile-info {
+    background: #111;
+    padding: 20px;
+    border-radius: 15px;
+    margin-bottom: 20px;
+}
+
+.profile-info p {
+    margin: 10px 0;
+    color: #fff;
+}
+
+.profile-info .label {
+    color: #00ff88;
+    width: 100px;
+    display: inline-block;
+}
+
+.transactions {
+    background: #111;
+    padding: 20px;
+    border-radius: 15px;
+}
+
+.transactions h3 {
+    color: #00ff88;
+    margin-bottom: 15px;
+    font-size: 18px;
+}
+
+.transactions p {
+    color: #666;
+    margin: 8px 0;
+    padding: 5px 0;
+    border-bottom: 1px solid #222;
+}
+
+/* Модалка */
+#managerModal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 200;
+}
+
+.modal-overlay {
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-box {
+    background: #111;
+    padding: 30px;
+    border-radius: 20px;
+    width: 90%;
+    max-width: 350px;
+    text-align: center;
+}
+
+.modal-box h3 {
+    color: #00ff88;
+    margin-bottom: 15px;
+}
+
+.modal-box p {
+    color: #666;
+    margin-bottom: 15px;
+}
+
+.manager-link {
+    background: #1a1a1a;
+    padding: 15px;
+    border-radius: 10px;
+    color: #00ff88;
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    cursor: pointer;
+}
+
+.close-modal {
+    background: #00ff88;
+    color: #000;
+    border: none;
+    padding: 10px 30px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+}

@@ -8,22 +8,33 @@ const user = tg.initDataUnsafe?.user;
 
 // Загрузка данных
 document.addEventListener('DOMContentLoaded', function() {
-    // Здесь можно загрузить данные пользователя
-    console.log('Mini App загружен');
+    console.log('Mini App загружен с новым меню');
+    
+    // Если есть данные пользователя, можно их отобразить
+    if (user) {
+        console.log('Пользователь:', user);
+    }
 });
 
-// Обработка вкладок
+// Обработка вкладок (All items, Collections, Bundles)
 document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', function() {
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         this.classList.add('active');
         
-        // Отправляем вибрацию (только в Telegram)
+        // Отправляем вибрацию
         tg.HapticFeedback.impactOccurred('light');
         
-        // Здесь можно загрузить контент для выбранной вкладки
         const tabName = this.textContent;
         console.log(`Выбрана вкладка: ${tabName}`);
+        
+        // Отправляем данные в бот
+        const data = {
+            action: 'tab_click',
+            tab: tabName,
+            userId: user?.id
+        };
+        tg.sendData(JSON.stringify(data));
     });
 });
 
@@ -40,46 +51,109 @@ document.querySelector('.quick-find').addEventListener('click', function() {
     });
 });
 
-// Обработка элементов меню
+// Обработка элементов меню (Collection и Model)
 document.querySelectorAll('.menu-item').forEach(item => {
     item.addEventListener('click', function() {
+        const action = this.dataset.action;
         const itemName = this.querySelector('span').textContent;
         
-        // Отправляем вибрацию
         tg.HapticFeedback.impactOccurred('medium');
         
-        // Отправляем действие в зависимости от нажатого пункта
-        switch(itemName) {
-            case 'Collection':
+        // Отправляем действие в бот
+        const data = {
+            action: action,
+            item: itemName,
+            userId: user?.id
+        };
+        tg.sendData(JSON.stringify(data));
+        
+        // Показываем попап
+        tg.showPopup({
+            title: itemName,
+            message: `Раздел "${itemName}" откроется в следующем обновлении!`,
+            buttons: [{type: 'ok'}]
+        });
+    });
+});
+
+// Обработка нижней навигации (NFT, My gift, Profile)
+document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', function() {
+        const navAction = this.dataset.nav;
+        const navName = this.querySelector('span').textContent;
+        
+        tg.HapticFeedback.selectionChanged();
+        
+        // Отправляем в бот
+        const data = {
+            action: 'nav_click',
+            section: navAction,
+            name: navName,
+            userId: user?.id
+        };
+        tg.sendData(JSON.stringify(data));
+        
+        // Разная логика для разных кнопок
+        switch(navAction) {
+            case 'nft':
                 tg.showPopup({
-                    title: 'Collection',
-                    message: 'Ваши коллекции будут здесь',
+                    title: 'NFT',
+                    message: 'Ваши NFT коллекции появятся здесь',
                     buttons: [{type: 'ok'}]
                 });
                 break;
                 
-            case 'Model':
+            case 'gift':
                 tg.showPopup({
-                    title: 'Model',
-                    message: 'Выберите модель для открытия',
+                    title: 'My Gift',
+                    message: 'У вас 0 подарков. Получите подарки в сезоне!',
                     buttons: [{type: 'ok'}]
                 });
                 break;
                 
-            case 'Back':
-                tg.HapticFeedback.notificationOccurred('warning');
+            case 'profile':
+                const userInfo = user ? 
+                    `${user.first_name} ${user.last_name || ''}\nID: ${user.id}` : 
+                    'Информация загружается...';
+                
+                tg.showPopup({
+                    title: 'Profile',
+                    message: userInfo,
+                    buttons: [{type: 'ok'}]
+                });
+                break;
+        }
+    });
+});
+
+// Обработка нижних кнопок (Back, Store, Season)
+document.querySelectorAll('.action-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const action = this.dataset.action;
+        const btnName = this.querySelector('span').textContent;
+        
+        tg.HapticFeedback.impactOccurred('medium');
+        
+        const data = {
+            action: action,
+            button: btnName,
+            userId: user?.id
+        };
+        tg.sendData(JSON.stringify(data));
+        
+        switch(action) {
+            case 'back':
                 tg.showPopup({
                     title: 'Назад',
                     message: 'Вернуться в предыдущее меню?',
                     buttons: [
-                        {id: 'back', text: 'Да'},
+                        {id: 'back_yes', text: 'Да'},
                         {type: 'cancel', text: 'Нет'}
                     ]
                 });
                 break;
                 
-            case 'Store':
-                // Открыть магазин
+            case 'store':
                 tg.showPopup({
                     title: 'Store',
                     message: 'Добро пожаловать в магазин!',
@@ -87,59 +161,30 @@ document.querySelectorAll('.menu-item').forEach(item => {
                 });
                 break;
                 
-            case 'My gifts':
+            case 'season':
                 tg.showPopup({
-                    title: 'My Gifts',
-                    message: 'У вас 0 подарков. Получите подарки в сезоне!',
-                    buttons: [{type: 'ok'}]
-                });
-                break;
-                
-            case 'Season':
-                tg.showPopup({
-                    title: 'Season Spring 2024',
-                    message: 'Прогресс: 0%\nДо конца сезона: 15 дней',
+                    title: 'Season',
+                    message: 'Сезон Spring 2024\nПрогресс: 0%\nДо конца: 15 дней',
                     buttons: [{type: 'ok'}]
                 });
                 break;
         }
-        
-        // Отправляем данные в бот (если нужно)
-        const data = {
-            action: 'menu_click',
-            item: itemName,
-            userId: user?.id
-        };
-        
-        // Можно отправить в бот
-        // tg.sendData(JSON.stringify(data));
     });
 });
 
-// Обработка нижней навигации
-document.querySelectorAll('.nav-item').forEach(item => {
-    item.addEventListener('click', function() {
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        this.classList.add('active');
-        tg.HapticFeedback.selectionChanged();
-    });
-});
-
-// Обновление баланса (пример)
+// Функция обновления баланса
 function updateBalance(amount) {
     document.querySelector('.balance-amount').textContent = amount;
     
-    // Отправляем обновление в бот
     const data = {
         action: 'update_balance',
         balance: amount,
         userId: user?.id
     };
-    
     tg.sendData(JSON.stringify(data));
 }
 
-// Получение подарка (пример)
+// Функция получения подарка
 function receiveGift(giftName) {
     const data = {
         action: 'new_gift',
@@ -156,11 +201,11 @@ function receiveGift(giftName) {
     });
 }
 
-// Обработка событий Telegram
+// Обработка закрытия попапов
 tg.onEvent('popupClosed', function(event) {
-    if (event.button_id === 'back') {
-        // Вернуться назад
+    if (event.button_id === 'back_yes') {
         console.log('Возврат назад');
+        // Здесь можно добавить логику возврата
     }
 });
 
@@ -174,4 +219,4 @@ window.addEventListener('beforeunload', function() {
     tg.sendData(JSON.stringify(data));
 });
 
-console.log('Mini App запущен в стиле OTON!');
+console.log('Mini App загружен с новым меню: NFT, My gift, Profile снизу');

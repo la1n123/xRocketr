@@ -35,10 +35,10 @@
                 <span>Quick find</span>
             </div>
 
-            <!-- Сетка элементов -->
+            <!-- Сетка элементов (верхняя) -->
             <div class="items-grid">
                 <!-- Collection -->
-                <div class="menu-item collection-item">
+                <div class="menu-item collection-item" data-action="collection">
                     <div class="item-icon">
                         <i class="fas fa-layer-group"></i>
                     </div>
@@ -46,66 +46,51 @@
                 </div>
 
                 <!-- Model -->
-                <div class="menu-item model-item">
+                <div class="menu-item model-item" data-action="model">
                     <div class="item-icon">
                         <i class="fas fa-cube"></i>
                     </div>
                     <span>Model</span>
                 </div>
+            </div>
 
+            <!-- Нижняя навигация с NFT, My gift, Profile -->
+            <nav class="bottom-nav">
+                <div class="nav-item" data-nav="nft">
+                    <i class="fas fa-image"></i>
+                    <span>NFT</span>
+                </div>
+                <div class="nav-item" data-nav="gift">
+                    <i class="fas fa-gift"></i>
+                    <span>My gift</span>
+                </div>
+                <div class="nav-item" data-nav="profile">
+                    <i class="fas fa-user"></i>
+                    <span>Profile</span>
+                </div>
+            </nav>
+
+            <!-- Дополнительные кнопки (Back, Store, Season) -->
+            <div class="bottom-actions">
                 <!-- Back -->
-                <div class="menu-item back-item">
-                    <div class="item-icon">
-                        <i class="fas fa-arrow-left"></i>
-                    </div>
+                <div class="action-btn back-item" data-action="back">
+                    <i class="fas fa-arrow-left"></i>
                     <span>Back</span>
                 </div>
 
                 <!-- Store -->
-                <div class="menu-item store-item">
-                    <div class="item-icon">
-                        <i class="fas fa-store"></i>
-                    </div>
+                <div class="action-btn store-item" data-action="store">
+                    <i class="fas fa-store"></i>
                     <span>Store</span>
                 </div>
 
-                <!-- My gifts -->
-                <div class="menu-item gifts-item">
-                    <div class="item-icon">
-                        <i class="fas fa-gift"></i>
-                    </div>
-                    <span>My gifts</span>
-                </div>
-
                 <!-- Season -->
-                <div class="menu-item season-item">
-                    <div class="item-icon">
-                        <i class="fas fa-calendar"></i>
-                    </div>
+                <div class="action-btn season-item" data-action="season">
+                    <i class="fas fa-calendar"></i>
                     <span>Season</span>
                 </div>
             </div>
         </div>
-
-        <!-- Нижняя навигация (как в OTON) -->
-        <nav class="bottom-nav">
-            <div class="nav-item active">
-                <i class="fas fa-home"></i>
-                <span>Home</span>
-            </div>
-            <div class="nav-item">
-                <i class="fas fa-compass"></i>
-                <span>Explore</span>
-            </div>
-            <div class="nav-item">
-                <i class="fas fa-wallet"></i>
-                <span>Wallet</span>
-            </div>
-            <div class="nav-item">
-                <i class="fas fa-user"></i>
-                <span>Profile</span>
-            </div>
-        </nav>
     </div>
 
     <script src="script.js"></script>

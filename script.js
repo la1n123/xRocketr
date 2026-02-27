@@ -3,99 +3,86 @@ const tg = window.Telegram.WebApp;
 tg.ready();
 tg.expand();
 
-// Вся логика запускается после полной загрузки DOM
-document.addEventListener('DOMContentLoaded', async function() {
-    // ========== ДАННЫЕ ==========
-    const user = tg.initDataUnsafe?.user;
-    const TOTAL_NFT = 115; // ИЗМЕНЕНО НА 115
-
-    // Имена NFT (расширим до 115, повторяя существующие)
-    const baseNames = [
-        "Whip Cupcake #133069",
-        "Stellar Rocket #37166",
-        "Stellar Rocket #117704",
-        "Diamond Hands #007",
-        "To The Moon #420",
-        "Alien Artifact #999",
-        "Dragon Egg #001",
-        "Magic Sword #123",
-        "Ancient Shield #456",
-        "Cyber Punk #777",
-        "Neon City #888",
-        "Samurai #999",
-        "Golden Coin #111",
-        "Silver Ring #222",
-        "Bronze Medal #333",
-        "Crystal Ball #444",
-        "Magic Hat #555",
-        "Flying Carpet #666",
-        "Treasure Chest #777",
-        "Legendary Sword #888",
-        "Phoenix Feather #001",
-        "Thunder Hammer #002",
-        "Ice Wand #003",
-        "Fire Blade #004",
-        "Shadow Cloak #005",
-        "Light Shield #006",
-        "Dark Helm #007",
-        "Royal Crown #008",
-        "Ancient Tome #009",
-        "Mystic Orb #010",
-        "Elven Bow #011",
-        "Dwarven Axe #012",
-        "Goblin Dagger #013",
-        "Dragon Scale #014",
-        "Unicorn Horn #015",
-        "Pegasus Wing #016",
-        "Griffin Claw #017",
-        "Sphinx Eye #018",
-        "Phoenix Ash #019",
-        "Dragon Heart #020",
-        "Star Dust #021"
-    ];
-    
-    // Расширяем массив до 115 элементов (просто повторяем)
-    const nftNames = [];
-    for (let i = 0; i < TOTAL_NFT; i++) {
-        nftNames.push(baseNames[i % baseNames.length] + ` #${i+1}`);
+// Функция перемешивания массива (алгоритм Фишера-Йетса)
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
     }
+    return array;
+}
+
+document.addEventListener('DOMContentLoaded', async function() {
+    const user = tg.initDataUnsafe?.user;
+    const TOTAL_NFT = 115;
+
+    // Базовые имена (можно расширить или повторять)
+    const baseNames = [
+        
+    ];
 
     // ========== ЗАГРУЗКА ЦЕН ИЗ JSON ==========
     let prices = {};
     try {
-        const response = await fetch('prices.json?' + Date.now()); // добавляем параметр для сброса кэша
+        const response = await fetch('prices.json?' + Date.now());
         if (response.ok) {
             prices = await response.json();
-            console.log('✅ Цены загружены из prices.json');
+            console.log('✅ Цены загружены');
         } else {
-            console.warn('⚠️ prices.json не найден, используются случайные цены');
+            console.warn('⚠️ prices.json не найден, случайные цены');
         }
     } catch (e) {
-        console.warn('⚠️ Ошибка загрузки prices.json, используются случайные цены', e);
+        console.warn('⚠️ Ошибка загрузки цен', e);
     }
 
-    // ========== ЗАГРУЗКА NFT ==========
+    // ========== СОЗДАЁМ МАССИВ ВСЕХ КАРТОЧЕК ==========
+    let nftItems = [];
+    for (let i = 1; i <= TOTAL_NFT; i++) {
+        const nameIndex = (i - 1) % baseNames.length;
+        // Уникальное имя (можно добавить номер, чтобы различать)
+        const displayName = baseNames[nameIndex] + ` #${i}`;
+        
+        // Цена из JSON или случайная
+        let price = prices[i];
+        if (price === undefined) {
+            price = (Math.random() * 100).toFixed(2);
+        } else {
+            price = Number(price).toFixed(2);
+        }
+        
+        nftItems.push({
+            id: i,
+            name: displayName,
+            price: price
+        });
+    }
+
+    // ========== ПЕРЕМЕШИВАЕМ МАССИВ ==========
+    nftItems = shuffleArray(nftItems);
+
+    // ========== ОТРИСОВЫВАЕМ КАРТОЧКИ В СЛУЧАЙНОМ ПОРЯДКЕ ==========
     const nftGrid = document.getElementById('nftGrid');
     if (nftGrid) {
-        nftGrid.innerHTML = ''; // Очищаем перед загрузкой
-        for (let i = 1; i <= TOTAL_NFT; i++) {
-            const nameIndex = (i - 1) % nftNames.length;
-            // Берём цену из JSON, если есть, иначе случайная
-            let price = prices[i];
-            if (price === undefined) {
-                price = (Math.random() * 100).toFixed(2);
-            } else {
-                price = Number(price).toFixed(2);
-            }
+        nftGrid.innerHTML = ''; // очищаем
+        nftItems.forEach(item => {
             nftGrid.innerHTML += `
-                <div class="nft-card" data-id="${i}">
-                    <img src="images/${i}.jpg" alt="NFT ${i}" onerror="this.src='https://via.placeholder.com/150/1a1a1a/00ff88?text=NFT+${i}'">
-                    <div class="nft-name">${nftNames[nameIndex]}</div>
-                    <div class="nft-price">${price} 🏆</div>
+                <div class="nft-card" data-id="${item.id}">
+                    <img src="images/${item.id}.jpg" 
+                         alt="NFT ${item.id}" 
+                         onerror="this.src='https://via.placeholder.com/150/1a1a1a/00ff88?text=NFT+${item.id}'">
+                    <div class="nft-name">${item.name}</div>
+                    <div class="nft-price">${item.price} 🏆</div>
                 </div>
             `;
-        }
+        });
     }
+
+    // ========== ОСТАЛЬНАЯ ЧАСТЬ КОДА (НАВИГАЦИЯ, МОДАЛКИ И Т.Д.) ==========
+    // Вставь сюда весь остальной код из предыдущего скрипта, 
+    // начиная с "= ПРОФИЛЬ =" и до конца.
+    // Чтобы не дублировать 500 строк, я покажу кратко – но ты должен скопировать 
+    // остальную часть из своего рабочего скрипта.
+    // Например, вот так:
 
     // ========== ПРОФИЛЬ ==========
     if (user) {
@@ -313,5 +300,5 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     });
 
-    console.log(`✅ Mini App загружен, ${TOTAL_NFT} NFT`);
+    console.log(`✅ Mini App загружен, ${TOTAL_NFT} NFT, порядок случайный`);
 });

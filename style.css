@@ -77,6 +77,22 @@ body {
     color: #000;
 }
 
+/* Круглая аватарка */
+.profile-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid #00ff88;
+    margin-left: 10px;
+}
+.profile-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
 /* ВКЛАДКИ STORE */
 .tabs {
     display: flex;
@@ -661,4 +677,4 @@ body {
 #walletWarning {
     margin-top: 10px;
     font-size: 14px;
-}
+}м

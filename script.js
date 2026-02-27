@@ -7,10 +7,10 @@ tg.expand();
 document.addEventListener('DOMContentLoaded', async function() {
     // ========== ДАННЫЕ ==========
     const user = tg.initDataUnsafe?.user;
-    const TOTAL_NFT = 41;
+    const TOTAL_NFT = 115; // ИЗМЕНЕНО НА 115
 
-    // Имена NFT
-    const nftNames = [
+    // Имена NFT (расширим до 115, повторяя существующие)
+    const baseNames = [
         "Whip Cupcake #133069",
         "Stellar Rocket #37166",
         "Stellar Rocket #117704",
@@ -53,11 +53,17 @@ document.addEventListener('DOMContentLoaded', async function() {
         "Dragon Heart #020",
         "Star Dust #021"
     ];
+    
+    // Расширяем массив до 115 элементов (просто повторяем)
+    const nftNames = [];
+    for (let i = 0; i < TOTAL_NFT; i++) {
+        nftNames.push(baseNames[i % baseNames.length] + ` #${i+1}`);
+    }
 
     // ========== ЗАГРУЗКА ЦЕН ИЗ JSON ==========
     let prices = {};
     try {
-        const response = await fetch('prices.json');
+        const response = await fetch('prices.json?' + Date.now()); // добавляем параметр для сброса кэша
         if (response.ok) {
             prices = await response.json();
             console.log('✅ Цены загружены из prices.json');
@@ -71,6 +77,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // ========== ЗАГРУЗКА NFT ==========
     const nftGrid = document.getElementById('nftGrid');
     if (nftGrid) {
+        nftGrid.innerHTML = ''; // Очищаем перед загрузкой
         for (let i = 1; i <= TOTAL_NFT; i++) {
             const nameIndex = (i - 1) % nftNames.length;
             // Берём цену из JSON, если есть, иначе случайная
@@ -268,8 +275,14 @@ document.addEventListener('DOMContentLoaded', async function() {
         card.addEventListener('click', function() {
             const id = this.dataset.id;
             const name = this.querySelector('.nft-name')?.textContent || 'NFT';
+            const price = this.querySelector('.nft-price')?.textContent || '0';
             tg.HapticFeedback?.impactOccurred('medium');
-            tg.sendData(JSON.stringify({ action: 'nft_click', id, name }));
+            tg.sendData(JSON.stringify({ 
+                action: 'nft_click', 
+                id, 
+                name,
+                price: price.replace('🏆', '').trim()
+            }));
         });
     });
 

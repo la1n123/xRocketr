@@ -15,17 +15,20 @@ function shuffleArray(array) {
 document.addEventListener('DOMContentLoaded', async function() {
     const user = tg.initDataUnsafe?.user;
     const TOTAL_NFT = 115;
-    const TON_TO_USD = 2.5; // курс, можно менять
+    const TON_TO_USD = 1.4; // курс изменён на 1.4
 
-    // Состояние кошелька (загружаем из localStorage)
+    // Состояние кошелька и выбранной валюты (TON или RUB)
     let walletConnected = localStorage.getItem('walletConnected') === 'true';
-    let currency = localStorage.getItem('currency') || 'TON'; // 'TON' или 'USD'
+    let walletType = localStorage.getItem('walletType') || 'TON'; // 'TON' или 'RUB'
+    let currency = localStorage.getItem('currency') || 'TON'; // 'TON' или 'USD' (для отображения цен)
 
     // Элементы для управления кошельком
     const walletStatus = document.getElementById('walletStatus');
     const connectWalletBtn = document.getElementById('connectWalletBtn');
+    const walletTypeTon = document.getElementById('walletTypeTon');
+    const walletTypeRub = document.getElementById('walletTypeRub');
 
-    // Элементы переключателя валют
+    // Элементы переключателя валют (в шапке)
     const currencyTon = document.getElementById('currencyTon');
     const currencyUsd = document.getElementById('currencyUsd');
 
@@ -36,10 +39,15 @@ document.addEventListener('DOMContentLoaded', async function() {
     const buyModalName = document.getElementById('buyModalName');
     const buyModalPrice = document.getElementById('buyModalPrice');
     const walletWarning = document.getElementById('walletWarning');
+    // Дополнительные поля в модалке
+    const modalTerm = document.getElementById('modalTerm');
+    const modalBackground = document.getElementById('modalBackground');
+    const modalModel = document.getElementById('modalModel');
+    const modalNumber = document.getElementById('modalNumber');
 
-    // Данные карточек (оригинальные цены в TON)
+    // Данные карточек
     let nftItems = [];
-    let pricesInTon = {}; // для быстрого доступа
+    let pricesInTon = {};
 
     // Базовые имена
     const baseNames = [
@@ -98,7 +106,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         console.warn('Ошибка загрузки цен', e);
     }
 
-    // Создаём массив карточек с ценами в TON
+    // Создаём массив карточек
     for (let i = 1; i <= TOTAL_NFT; i++) {
         const nameIndex = (i - 1) % baseNames.length;
         const displayName = baseNames[nameIndex] + ` #${i}`;
@@ -110,7 +118,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Перемешиваем
     nftItems = shuffleArray(nftItems);
 
-    // Функция отображения цены в зависимости от валюты
+    // Функция форматирования цены в зависимости от валюты отображения
     function formatPrice(priceTon) {
         if (currency === 'TON') {
             return priceTon.toFixed(2) + ' $';
@@ -119,7 +127,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    // Отрисовка всех карточек
+    // Отрисовка карточек
     const nftGrid = document.getElementById('nftGrid');
     function renderNFTs() {
         if (!nftGrid) return;
@@ -136,11 +144,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 </div>
             `;
         });
-        // После отрисовки вешаем обработчики кликов
         attachNFTClickHandlers();
     }
 
-    // Обработчики кликов по карточкам
+    // Клик по карточке
     function attachNFTClickHandlers() {
         document.querySelectorAll('.nft-card').forEach(card => {
             card.addEventListener('click', function() {
@@ -152,10 +159,25 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-    // Открыть модалку покупки
+    // Открыть модалку покупки с дополнительными полями
     function openBuyModal(id, name, priceTon) {
         buyModalName.textContent = name;
         buyModalPrice.textContent = 'Цена: ' + formatPrice(priceTon);
+
+        // Заполняем дополнительные поля заглушками (имитация загрузки)
+        modalTerm.textContent = 'загрузка...';
+        modalBackground.textContent = 'загрузка...';
+        modalModel.textContent = 'загрузка...';
+        modalNumber.textContent = 'загрузка...';
+
+        // Через небольшую задержку покажем "данные" (можно убрать или оставить)
+        setTimeout(() => {
+            modalTerm.textContent = '∞ (бессрочно)';
+            modalBackground.textContent = 'Космос';
+            modalModel.textContent = 'Стандарт';
+            modalNumber.textContent = `#${id}`;
+        }, 300);
+
         if (!walletConnected) {
             confirmBuyBtn.disabled = true;
             walletWarning.style.display = 'block';
@@ -163,18 +185,17 @@ document.addEventListener('DOMContentLoaded', async function() {
             confirmBuyBtn.disabled = false;
             walletWarning.style.display = 'none';
         }
-        // Сохраняем ID текущей NFT в data-атрибут кнопки
+
         confirmBuyBtn.dataset.nftId = id;
         buyModal.style.display = 'flex';
         tg.HapticFeedback?.impactOccurred('medium');
     }
 
-    // Закрыть модалку покупки
+    // Закрытие модалки
     closeBuyModal.addEventListener('click', () => {
         buyModal.style.display = 'none';
     });
 
-    // Клик по фону модалки
     document.querySelectorAll('.modal-overlay').forEach(overlay => {
         overlay.addEventListener('click', (e) => {
             if (e.target === overlay) {
@@ -187,7 +208,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     confirmBuyBtn.addEventListener('click', () => {
         if (!walletConnected) return;
         const nftId = confirmBuyBtn.dataset.nftId;
-        // Здесь можно отправить данные в бот
         tg.sendData(JSON.stringify({ action: 'buy_nft', id: nftId }));
         tg.HapticFeedback?.notificationOccurred('success');
         tg.showPopup({
@@ -198,10 +218,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         buyModal.style.display = 'none';
     });
 
-    // ========== ПРИВЯЗКА КОШЕЛЬКА ==========
+    // ========== ПРИВЯЗКА КОШЕЛЬКА С ВЫБОРОМ ТИПА ==========
     function updateWalletUI() {
         if (walletConnected) {
-            walletStatus.textContent = 'Кошелёк привязан ✓';
+            walletStatus.textContent = `Кошелёк привязан (${walletType}) ✓`;
             walletStatus.classList.add('connected');
             connectWalletBtn.textContent = 'Изменить кошелёк';
         } else {
@@ -209,10 +229,30 @@ document.addEventListener('DOMContentLoaded', async function() {
             walletStatus.classList.remove('connected');
             connectWalletBtn.textContent = 'Привязать кошелёк';
         }
+        // Подсветка выбранного типа
+        if (walletTypeTon && walletTypeRub) {
+            walletTypeTon.classList.toggle('active', walletType === 'TON');
+            walletTypeRub.classList.toggle('active', walletType === 'RUB');
+        }
+    }
+
+    // Переключение типа кошелька
+    if (walletTypeTon) {
+        walletTypeTon.addEventListener('click', () => {
+            walletType = 'TON';
+            localStorage.setItem('walletType', walletType);
+            updateWalletUI();
+        });
+    }
+    if (walletTypeRub) {
+        walletTypeRub.addEventListener('click', () => {
+            walletType = 'RUB';
+            localStorage.setItem('walletType', walletType);
+            updateWalletUI();
+        });
     }
 
     connectWalletBtn.addEventListener('click', () => {
-        // Имитация привязки (можно заменить на реальный диалог)
         walletConnected = true;
         localStorage.setItem('walletConnected', 'true');
         updateWalletUI();
@@ -222,21 +262,18 @@ document.addEventListener('DOMContentLoaded', async function() {
         tg.HapticFeedback?.notificationOccurred('success');
         tg.showPopup({
             title: 'Кошелёк привязан',
-            message: 'Теперь вы можете покупать NFT',
+            message: `Тип: ${walletType}. Теперь вы можете покупать NFT.`,
             buttons: [{type: 'ok'}]
         });
     });
 
-    // ========== ПЕРЕКЛЮЧЕНИЕ ВАЛЮТЫ ==========
+    // ========== ПЕРЕКЛЮЧЕНИЕ ВАЛЮТЫ ОТОБРАЖЕНИЯ ==========
     function setCurrency(newCurrency) {
         currency = newCurrency;
         localStorage.setItem('currency', currency);
-        // Обновляем классы кнопок
         currencyTon.classList.toggle('active', currency === 'TON');
         currencyUsd.classList.toggle('active', currency === 'USD');
-        // Перерисовываем цены во всех карточках
         renderNFTs();
-        // Если модалка открыта, обновляем цену в ней
         if (buyModal.style.display === 'flex') {
             const id = confirmBuyBtn.dataset.nftId;
             if (id) {
@@ -252,7 +289,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Инициализация UI
     renderNFTs();
     updateWalletUI();
-    setCurrency(currency); // установит активную кнопку
+    setCurrency(currency);
 
     // ========== ПРОФИЛЬ ==========
     if (user) {
@@ -427,7 +464,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     });
 
-    // ========== ОБРАБОТКА КНОПОК COLLECTION, MODEL, BACK, SYMBOL ==========
+    // ========== КНОПКИ COLLECTION, MODEL, BACK, SYMBOL ==========
     document.querySelectorAll('.icon-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             const action = this.dataset.action || this.textContent.trim();
@@ -444,5 +481,5 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     });
 
-    console.log(`✅ Mini App загружен, ${TOTAL_NFT} NFT, порядок случайный`);
+    console.log(`✅ Mini App загружен, ${TOTAL_NFT} NFT, курс TON/USD = ${TON_TO_USD}`);
 });

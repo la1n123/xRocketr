@@ -10,191 +10,131 @@
 </head>
 <body>
     <div class="app">
-        <!-- Шапка -->
-        <div id="globalHeader" class="global-header">
-            <div class="balance-info">
-                <span class="balance">0 TON</span>
-                <span class="stats">3 collections Commission 0%</span>
+        <!-- ШАПКА КАК НА КАРТИНКЕ -->
+        <div class="header">
+            <div class="balance-row">
+                <span class="balance-number">0</span>
+                <span class="balance-currency">TON</span>
             </div>
-            <div class="profile-icon" id="profileIcon">
-                <i class="fas fa-user-circle"></i>
-            </div>
-        </div>
-
-        <!-- СТРАНИЦА STORE (ГЛАВНАЯ) -->
-        <div id="storePage" class="page active">
-            <div class="tabs">
-                <button class="tab active">All items</button>
-                <button class="tab">Collections</button>
-                <button class="tab">Bundles</button>
-            </div>
-
-            <div class="quick-find">
-                <i class="fas fa-search"></i>
-                <span>Quick find</span>
-            </div>
-
-            <div class="icon-row">
-                <div class="icon-btn" data-action="collection">📂 Collection</div>
-                <div class="icon-btn" data-action="model">🛒 Model</div>
-                <div class="icon-btn" data-action="back">⬅ Back</div>
-                <div class="icon-btn" data-action="symbol">🏷 Symbol</div>
-            </div>
-
-            <!-- СЕТКА NFT 3 В РЯД -->
-            <div class="nft-grid" id="nftGrid"></div>
-        </div>
-
-        <!-- СТРАНИЦА MY GIFTS -->
-        <div id="giftsPage" class="page">
-            <div class="page-header">
-                <button class="back-btn" id="backFromGifts"><i class="fas fa-arrow-left"></i></button>
-                <h2>Gifts</h2>
-            </div>
-            <div class="gift-tabs">
-                <button class="gift-tab active" data-gift="gifts">Gifts</button>
-                <button class="gift-tab" data-gift="offers">Offers</button>
-                <button class="gift-tab" data-gift="activity">My activity</button>
-            </div>
-
-            <div id="giftsTabContent" class="gift-content">
-                <div class="listing-row">
-                    <div><span class="label">Unlisted</span> <span class="value">0</span></div>
-                    <div><span class="label">Listed</span> <span class="value">0</span></div>
-                </div>
-
-                <div class="action-grid">
-                    <button class="action-btn" id="addBtn"><i class="fas fa-plus"></i> Add</button>
-                    <button class="action-btn" id="withdrawBtn"><i class="fas fa-arrow-down"></i> Withdraw</button>
-                    <button class="action-btn" id="sellBtn"><i class="fas fa-tag"></i> Sell</button>
-                    <button class="action-btn" id="sendBtn"><i class="fas fa-paper-plane"></i> Send</button>
-                    <button class="action-btn" id="bundleBtn"><i class="fas fa-layer-group"></i> Bundle</button>
-                </div>
-
-                <div class="quick-find small">
-                    <i class="fas fa-search"></i>
-                    <span>Quick find</span>
-                </div>
-
-                <div class="icon-row small">
-                    <div class="icon-btn">Collection</div>
-                    <div class="icon-btn">Model</div>
-                    <div class="icon-btn">Back</div>
-                    <div class="icon-btn">Symbol</div>
-                </div>
-
-                <div class="bot-info">
-                    <p>Any Telegram gifts? You can add them through our bot</p>
-                    <a href="#" id="howToAddLink">How do I add gifts?</a>
-                </div>
-            </div>
-            <div id="offersTabContent" class="gift-content" style="display: none;">Offers section</div>
-            <div id="activityTabContent" class="gift-content" style="display: none;">Activity section</div>
-        </div>
-
-        <!-- СТРАНИЦА PROFILE -->
-        <div id="profilePage" class="page">
-            <div class="profile-header">
-                <button class="back-btn" id="backFromProfile"><i class="fas fa-arrow-left"></i></button>
-                <h2>Profile</h2>
-            </div>
-            <div class="profile-content">
-                <div class="user-badge">
-                    <span class="username">Jdjsndnxc</span>
-                    <span class="usernumber">#1000+</span>
-                </div>
-
-                <div class="stats-block">
-                    <div class="stat-item">
-                        <span class="stat-label">Inventory Cost</span>
-                        <span class="stat-value">0 TON</span>
-                        <span class="stat-sub">Bought/Sold 0/0</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Total Volume</span>
-                        <span class="stat-value">0 TON</span>
-                    </div>
-                </div>
-
-                <div class="cashback-block">
-                    <div class="cashback-title">CASHBACK BONUS</div>
-                    <div class="cashback-level">0% / Level 0</div>
-                    <div class="cashback-row">
-                        <span>Available to claim</span>
-                        <span class="claim-value">0</span>
-                    </div>
-                    <div class="cashback-row">
-                        <span>SEASON #2</span>
-                        <span class="claim-value">0</span>
-                    </div>
-                </div>
-
-                <div class="invite-block">
-                    <div class="invite-title">INVITE FRIENDS AND EARN TON</div>
-                    <div class="invite-text">
-                        Get More Benefits<br>
-                        Earn to 50% referral commissions Claim 10% season points and 50% cashback
-                    </div>
-                    <button class="invite-btn" id="inviteBtn">Invite friends</button>
-                </div>
+            <div class="header-stats">
+                <span>3 collections</span>
+                <span class="commission">Commission 0%</span>
             </div>
         </div>
 
-        <!-- СТРАНИЦА SEASON -->
-        <div id="seasonPage" class="page">
-            <div class="page-header">
-                <button class="back-btn" id="backFromSeason"><i class="fas fa-arrow-left"></i></button>
-                <h2>Season</h2>
-            </div>
-            <div style="padding: 20px; text-align: center;">Season content will appear here</div>
+        <!-- ВКЛАДКИ -->
+        <div class="tabs">
+            <button class="tab active">All items</button>
+            <button class="tab">Collections</button>
+            <button class="tab">Bundles</button>
         </div>
 
-        <!-- НИЖНЕЕ МЕНЮ -->
-        <nav class="bottom-nav">
+        <!-- QUICK FIND -->
+        <div class="quick-find">
+            <i class="fas fa-search"></i>
+            <span>Quick find</span>
+        </div>
+
+        <!-- ОСНОВНЫЕ КНОПКИ (6 штук) -->
+        <div class="menu-grid">
+            <div class="menu-item" data-action="collection">
+                <i class="fas fa-layer-group"></i>
+                <span>Collection</span>
+            </div>
+            <div class="menu-item" data-action="model">
+                <i class="fas fa-cube"></i>
+                <span>Model</span>
+            </div>
+            <div class="menu-item" data-action="back">
+                <i class="fas fa-arrow-left"></i>
+                <span>Back</span>
+            </div>
+            <div class="menu-item" data-action="store">
+                <i class="fas fa-store"></i>
+                <span>Store</span>
+            </div>
+            <div class="menu-item" data-action="gifts" id="myGiftsBtn">
+                <i class="fas fa-gift"></i>
+                <span>My gifts</span>
+            </div>
+            <div class="menu-item" data-action="season">
+                <i class="fas fa-calendar"></i>
+                <span>Season</span>
+            </div>
+        </div>
+
+        <!-- НИЖНЯЯ НАВИГАЦИЯ (3 кнопки) -->
+        <div class="bottom-nav">
             <div class="nav-item active" data-page="store">
                 <i class="fas fa-store"></i>
                 <span>Store</span>
             </div>
-            <div class="nav-item" data-page="gifts">
+            <div class="nav-item" data-page="gifts" id="giftNavBtn">
                 <i class="fas fa-gift"></i>
-                <span>My gifts</span>
+                <span>My gift</span>
             </div>
-            <div class="nav-item" data-page="season">
-                <i class="fas fa-calendar"></i>
-                <span>Season</span>
+            <div class="nav-item" data-page="profile" id="profileNavBtn">
+                <i class="fas fa-user"></i>
+                <span>Profile</span>
             </div>
-        </nav>
+        </div>
 
-        <!-- МОДАЛКА МЕНЕДЖЕРА -->
-        <div id="managerModal" class="modal">
-            <div class="modal-overlay">
-                <div class="modal-box">
-                    <h3>Пополнение</h3>
-                    <p>Напишите менеджеру:</p>
-                    <div class="manager-link" id="managerLink">@ManagerKupiKod</div>
-                    <button class="close-modal" id="closeManagerModal">Закрыть</button>
+        <!-- СТРАНИЦА STORE (С NFT) -->
+        <div id="storePage" class="page active">
+            <div class="nft-grid" id="nftGrid"></div>
+        </div>
+
+        <!-- СТРАНИЦА MY GIFTS -->
+        <div id="giftsPage" class="page" style="display: none;">
+            <div class="page-header">
+                <button class="back-btn" id="backFromGifts">←</button>
+                <h2>My gifts</h2>
+            </div>
+            
+            <div class="gifts-content">
+                <div class="gifts-zero">0</div>
+                <div class="gifts-buttons">
+                    <button class="gift-action-btn" id="addBtn">Пополнить</button>
+                    <button class="gift-action-btn" id="withdrawBtn">Вывести</button>
                 </div>
             </div>
         </div>
 
-        <!-- МОДАЛКА ВЫВОДА -->
-        <div id="withdrawModal" class="modal">
-            <div class="modal-overlay">
-                <div class="modal-box">
-                    <h3>Вывод средств</h3>
-                    <div class="input-group">
-                        <label>TON кошелек</label>
-                        <input type="text" id="tonWallet" placeholder="EQD...">
-                    </div>
-                    <div class="input-group">
-                        <label>Номер карты</label>
-                        <input type="text" id="cardNumber" placeholder="1234 5678 9012 3456">
-                    </div>
-                    <div class="modal-buttons">
-                        <button class="submit-btn" id="submitWithdraw">Отправить</button>
-                        <button class="close-modal" id="closeWithdrawModal">Отмена</button>
-                    </div>
+        <!-- СТРАНИЦА PROFILE -->
+        <div id="profilePage" class="page" style="display: none;">
+            <div class="page-header">
+                <button class="back-btn" id="backFromProfile">←</button>
+                <h2>Profile</h2>
+            </div>
+            
+            <div class="profile-content">
+                <div class="profile-info">
+                    <p>👤 Имя: <span id="profileName">Загрузка...</span></p>
+                    <p>🆔 ID: <span id="profileId">-</span></p>
+                    <p>🖼️ NFT: 0</p>
+                    <p>💰 Баланс: 0 TON</p>
                 </div>
+            </div>
+        </div>
+
+        <!-- МОДАЛКА ПОПОЛНЕНИЯ -->
+        <div id="replenishModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h3>Пополнение</h3>
+                <p>Напишите менеджеру:</p>
+                <div class="manager-link" id="managerLink">@ManagerKupiKod</div>
+                <button class="close-btn" id="closeReplenish">Закрыть</button>
+            </div>
+        </div>
+
+        <!-- МОДАЛКА ВЫВОДА -->
+        <div id="withdrawModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h3>Вывод средств</h3>
+                <input type="text" id="tonWallet" placeholder="TON кошелек">
+                <input type="text" id="cardNumber" placeholder="Номер карты">
+                <button class="submit-btn" id="submitWithdraw">Отправить</button>
+                <button class="close-btn" id="closeWithdraw">Отмена</button>
             </div>
         </div>
     </div>

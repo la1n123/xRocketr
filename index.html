@@ -76,6 +76,8 @@
         .mygifts-tab.active { background: rgba(0,255,136,0.2); color: #00FF88; }
         .filter-stubs { display: flex; gap: 8px; margin: 16px 0; flex-wrap: wrap; }
         .stub { background: rgba(30,30,40,0.5); border-radius: 30px; padding: 5px 12px; font-size: 11px; color: #aaa; }
+        .manager-link { margin-top: 16px; font-size: 12px; color: #aaa; }
+        .manager-link a { color: #00FF88; text-decoration: none; }
     </style>
 </head>
 <body>
@@ -140,7 +142,7 @@
                     <div style="flex:1; background:rgba(0,0,0,0.4); border-radius:20px; padding:12px;"><div style="font-size:22px; font-weight:800;" id="purchasedCount">0</div><div>Purchased</div></div>
                     <div style="flex:1; background:rgba(0,0,0,0.4); border-radius:20px; padding:12px;"><div style="font-size:22px; font-weight:800;" id="soldCount">0</div><div>Sold</div></div>
                 </div>
-                <div style="margin-top:16px; font-size:12px; color:#aaa;">📞 Для добавления подарков напишите @ManagerKupiKod</div>
+                <div class="manager-link">📞 Для добавления подарков напишите <a href="https://t.me/ManagerKupiKod" target="_blank">@ManagerKupiKod</a></div>
             </div>
         </div>
     </div>
@@ -176,13 +178,16 @@
 <div class="toast" id="toastMsg"></div>
 
 <script>
-    // ---------- ФИКСИРОВАННЫЕ КОЛЛЕКЦИИ (только эти, новые не добавляются) ----------
+    // ---------- ФИКСИРОВАННЫЕ КОЛЛЕКЦИИ ----------
     const COLLECTIONS_LIST = ["Santa Hat", "Christmas Tree", "Snowman", "Easter Egg", "Pumpkin", "Fireworks", "Heart Balloon", "Party Popper", "Homemade Cake", "Ice Cream", "Kitty", "Magic Wand", "Rainbow", "Pixel Heart", "Dragon Egg", "Unicorn Horn", "Pepe", "Doge", "Shiba", "Snoop Cigar", "Mousse Cake", "Vice Cream"];
     const ALL_BGS = ["Dark Abyss","Neon City","Crystal Cave","Lava Core","Frostbite","Cyberpunk","Dreamscape","Void","Grape","Turquoise","Indigo Dye","Electric Indigo","Mint Green","Hunter Green","Ivory White","Emerald","Jade Green","Satin Gold","Cappuccino","Midnight Blue","Shamrock Green","Malachite","Pine Green","Copper","Black","Roman Silver","Sky Blue","Mystic Pearl","Neon Blue","Battleship Grey","Coral Red","Caramel","English Violet","Rosewood","Lemongrass","Onyx Black","Orange","Dark Lilac","Cyberpunk","Pacific Cyan","Electric Purple","Desert Sand","Persimmon","Chocolate","Pistachio","Pure Gold","Platinum","Strawberry","Cobalt Blue","French Blue","Pacific Green","Amber","Light Olive","Carrot Juice","Silver Blue","Chestnut","Aquamarine","Khaki Green","Burgundy","Sapphire","Steel Grey","Navy Blue","Lavender","Purple","Azure Blue","Moonstone","Fandango","Raspberry","Gunmetal","Carmine","Marine Blue","Tomato","Old Gold","Mustard","French Violet","Rifle Green","Ranger Green","Feldgrau","Deep Cyan","Burnt Sienna","Celtic Blue","Mexican Pink","Gunship Green","Fire Engine","Dark Green","Tactical Pine","Seal Brown","Camo Green"];
     const ALL_SYMBOLS = ["Star","Moon","Diamond","Flame","Thunder","Skull","Heart","Crown","Lightning","Snowflake","Rose","Sword","Shield","Anchor","Key","Lock","Eye","Dragon","Phoenix","Wolf","Eagle","Lion","Tiger","Bear","Snake","Spider","Butterfly","Bee","Ant","Spiral","Triangle","Square","Circle","Cross","Infinity","Omega","Sigma","Delta"];
     const MODEL_LIST = ["Classic","Rare","Epic","Legendary","Mythic"];
 
-    // ---------- НАЧАЛЬНЫЕ ДАННЫЕ (все балансы обнулены) ----------
+    // ---------- ОБЛАЧНАЯ СИНХРОНИЗАЦИЯ JSONBin ----------
+    const JSONBIN_BIN_ID = '6a0e195f6877513b27a5fd8b';
+    const JSONBIN_API_KEY = '$2a$10$Hh2yGWgUT/xVi/KVa7ANfetJuDVlAh2yOog0FHSIYDOst/g8HZchO';
+
     let marketGifts = [];
     let myGifts = [];
     let balances = { ton: 0, rub: 0, stars: 0, points: 0 };
@@ -190,26 +195,64 @@
     let priceMin = 0, priceMax = Infinity;
     let currentSort = "asc";
     let selectedGift = null;
-    let myGiftsTab = "gifts"; // gifts, offers, history
+    let myGiftsTab = "gifts";
 
-    // Загрузка из localStorage
-    function loadData() {
-        const savedMarket = localStorage.getItem("kupigifts_market");
-        if (savedMarket) marketGifts = JSON.parse(savedMarket);
-        const savedMy = localStorage.getItem("kupigifts_my");
-        if (savedMy) myGifts = JSON.parse(savedMy);
-        const savedBal = localStorage.getItem("kupigifts_bal");
-        if (savedBal) balances = JSON.parse(savedBal);
-        else {
-            balances = { ton: 0, rub: 0, stars: 0, points: 0 };
-            saveData();
-        }
-        updateUI();
+    // Сохранение в облако
+    async function saveToCloud() {
+        try {
+            const data = { marketGifts, myGifts, balances };
+            await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Master-Key': JSONBIN_API_KEY
+                },
+                body: JSON.stringify(data)
+            });
+            console.log('Saved to cloud');
+        } catch(e) { console.error('Save error', e); }
     }
+
+    // Загрузка из облака (с созданием бина, если нет данных)
+    async function loadFromCloud() {
+        try {
+            const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+                headers: { 'X-Master-Key': JSONBIN_API_KEY }
+            });
+            if (!response.ok) throw new Error('Load failed');
+            const data = await response.json();
+            marketGifts = data.record.marketGifts || [];
+            myGifts = data.record.myGifts || [];
+            balances = data.record.balances || { ton: 0, rub: 0, stars: 0, points: 0 };
+            // Если в облаке пусто, инициализируем пустыми массивами
+            if (marketGifts.length === 0) marketGifts = [];
+            if (myGifts.length === 0) myGifts = [];
+            updateUI();
+            renderFilters();
+            renderMarket();
+            renderMyGiftsContent();
+            toast('Данные загружены из облака');
+        } catch(e) {
+            console.error(e);
+            // Если бина нет или ошибка, создаём пустую структуру
+            toast('Не удалось загрузить из облака, создаём новое хранилище');
+            marketGifts = [];
+            myGifts = [];
+            balances = { ton: 0, rub: 0, stars: 0, points: 0 };
+            await saveToCloud();
+            updateUI();
+            renderFilters();
+            renderMarket();
+            renderMyGiftsContent();
+        }
+    }
+
+    // Локальное сохранение (дублируем в облако)
     function saveData() {
         localStorage.setItem("kupigifts_market", JSON.stringify(marketGifts));
         localStorage.setItem("kupigifts_my", JSON.stringify(myGifts));
         localStorage.setItem("kupigifts_bal", JSON.stringify(balances));
+        saveToCloud(); // синхронизируем с облаком
     }
 
     function updateUI() {
@@ -219,11 +262,9 @@
         document.getElementById("starsVal").innerText = balances.stars;
         document.getElementById("profileRub").innerHTML = balances.rub + " ₽";
         document.getElementById("purchasedCount").innerText = myGifts.length;
-        // sold count пока 0
         document.getElementById("soldCount").innerText = "0";
     }
 
-    // Получение коллекций только из фиксированного списка (для фильтров)
     function getCollections() {
         return COLLECTIONS_LIST;
     }
@@ -329,7 +370,7 @@
         }
     }
 
-    // Админ-панель: получение по ссылке (если сервер запущен)
+    // ---------- АДМИН-ПАНЕЛЬ (без изменений, но с облачной синхронизацией) ----------
     const API_BASE = 'http://127.0.0.1:5001';
     let fetchedData = null;
     document.getElementById("fetchGiftBtn").onclick = async () => {
@@ -376,10 +417,10 @@
             name, number, img, price, currency, bg, symbol, model
         };
         marketGifts.push(newGift);
-        saveData();
+        saveData(); // сохраняет и в облако, и в localStorage
         renderFilters();
         renderMarket();
-        toast(`✅ ${name} добавлен в маркет`);
+        toast(`✅ ${name} добавлен в маркет (виден всем)`);
         // очистка формы
         document.getElementById("giftLink").value = "";
         document.getElementById("fetchPreview").style.display = "none";
@@ -401,7 +442,7 @@
         else document.getElementById("imagePreview").innerHTML = "";
     });
 
-    // Ценовой фильтр
+    // Price range
     document.getElementById("applyPriceFilter").onclick = () => {
         let min = parseFloat(document.getElementById("priceMin").value);
         let max = parseFloat(document.getElementById("priceMax").value);
@@ -417,7 +458,7 @@
         renderMarket();
     };
 
-    // Админка: 10 нажатий на аватар, код 7706006550
+    // Админ-панель: 10 нажатий на аватар, код 7706006550
     let tapCount = 0, tapTimer;
     document.getElementById("avatarTrigger").onclick = () => {
         tapCount++;
@@ -434,7 +475,7 @@
     };
     function closeAdmin() { document.getElementById("adminModal").classList.remove("open"); }
 
-    // Переключение вкладок нижнего меню
+    // Переключение вкладок
     document.querySelectorAll(".nav-btn").forEach(btn => {
         btn.addEventListener("click", () => {
             const tab = btn.getAttribute("data-tab");
@@ -445,7 +486,6 @@
             if (tab === "mygifts") renderMyGiftsContent();
         });
     });
-    // Переключение вкладок внутри "Мои подарки"
     document.querySelectorAll(".mygifts-tab").forEach(tab => {
         tab.addEventListener("click", () => {
             const t = tab.getAttribute("data-tab");
@@ -467,16 +507,18 @@
         setTimeout(() => t.classList.remove("show"), 2000);
     }
 
-    loadData();
-    renderFilters();
-    renderMarket();
-    renderMyGiftsContent();
-    updateUI();
-
-    setTimeout(() => {
-        document.getElementById("preloader").classList.add("hide");
-        document.getElementById("app").classList.add("show");
-    }, 800);
+    // Старт: загружаем из облака, затем рендерим
+    (async () => {
+        await loadFromCloud();
+        renderFilters();
+        renderMarket();
+        renderMyGiftsContent();
+        updateUI();
+        setTimeout(() => {
+            document.getElementById("preloader").classList.add("hide");
+            document.getElementById("app").classList.add("show");
+        }, 800);
+    })();
 </script>
 </body>
 </html>

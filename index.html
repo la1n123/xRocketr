@@ -1930,14 +1930,14 @@
 
     // Gift modal
     function openGiftModal(gift) {
-        const mOverlay = document.getElementById("giftModal");
-        const mContent = document.getElementById("modalContent");
-        mOverlay.style.background = '';
-        mContent.style.transform = '';
-        mContent.style.transition = '';
+        if (_closeTimer) { clearTimeout(_closeTimer); _closeTimer = null; }
+        modalEl.style.background = '';
+        contentEl.style.transform = '';
+        contentEl.style.transition = '';
+        contentEl.style.opacity = '';
         selectedGift = gift;
         const currLabel = gift.currency === 'RUB' ? '₽' : gift.currency === 'Stars' ? '★' : 'TON';
-        mContent.innerHTML = `
+        contentEl.innerHTML = `
             <div class="modal-drag"></div>
             <img src="${gift.img}" class="modal-img" onerror="this.src='https://placehold.co/400/1a1a2e/ffffff?text=Gift&font=raleway';this.style.objectFit='contain';this.style.padding='20%'">
             <div class="modal-title">${escapeHtml(gift.name)}</div>
@@ -1972,12 +1972,12 @@
     }
 
     function closeGiftModal() {
-        const m = document.getElementById("giftModal");
-        const c = document.getElementById("modalContent");
-        m.style.background = '';
-        c.style.transform = '';
-        c.style.transition = '';
-        m.classList.remove("open");
+        if (_closeTimer) { clearTimeout(_closeTimer); _closeTimer = null; }
+        modalEl.style.background = '';
+        contentEl.style.transform = '';
+        contentEl.style.transition = '';
+        contentEl.style.opacity = '';
+        modalEl.classList.remove("open");
     }
 
     function buyGift() {
@@ -2299,44 +2299,42 @@
         if (e.target === document.getElementById("giftModal")) closeGiftModal();
     });
 
-    // Swipe to close modal — тянем вниз, отпускаем → закрывается
+    // Swipe to close modal
+    let _closeTimer = null;
+    const modalEl = document.getElementById("giftModal");
+    const contentEl = document.getElementById("modalContent");
     (function() {
-        let startY = 0, currentY = 0, isDragging = false, moved = false;
-        const modal = document.getElementById("giftModal");
-        const content = document.getElementById("modalContent");
-        modal.addEventListener("touchstart", (e) => {
-            if (content.scrollTop > 0) return;
+        let sy = 0, cy = 0, drag = false;
+        modalEl.addEventListener("touchstart", (e) => {
+            if (contentEl.scrollTop > 0) return;
             if (!e.target.closest('.modal-content')) return;
-            startY = e.touches[0].clientY;
-            currentY = startY;
-            isDragging = true;
-            moved = false;
-            content.style.transition = 'none';
+            sy = e.touches[0].clientY;
+            cy = sy; drag = true;
+            contentEl.style.transition = 'none';
+            if (_closeTimer) { clearTimeout(_closeTimer); _closeTimer = null; }
         }, { passive: true });
-        modal.addEventListener("touchmove", (e) => {
-            if (!isDragging) return;
-            currentY = e.touches[0].clientY;
-            const diff = currentY - startY;
-            if (diff > 5) moved = true;
-            if (diff > 0) {
-                content.style.transform = `translateY(${diff * 0.6}px)`;
-                modal.style.background = `rgba(0,0,0,${Math.max(0, 0.85 - diff / 1000)})`;
-                e.preventDefault();
+        modalEl.addEventListener("touchmove", (e) => {
+            if (!drag) return;
+            cy = e.touches[0].clientY;
+            const d = cy - sy;
+            if (d > 0) {
+                contentEl.style.transform = `translateY(${d * 0.5}px)`;
+                contentEl.style.opacity = Math.max(0.3, 1 - d / 400);
             }
-        }, { passive: false });
-        modal.addEventListener("touchend", (e) => {
-            if (!isDragging) return;
-            isDragging = false;
-            const diff = currentY - startY;
-            if (diff > 80 && moved) {
-                content.style.transition = 'transform 0.2s, opacity 0.2s';
-                content.style.transform = `translateY(${window.innerHeight}px)`;
-                modal.style.background = 'rgba(0,0,0,0)';
-                setTimeout(closeGiftModal, 200);
+        }, { passive: true });
+        modalEl.addEventListener("touchend", () => {
+            if (!drag) return;
+            drag = false;
+            const d = cy - sy;
+            if (d > 80) {
+                contentEl.style.transition = 'transform 0.25s, opacity 0.25s';
+                contentEl.style.transform = `translateY(100%)`;
+                contentEl.style.opacity = '0';
+                _closeTimer = setTimeout(() => { _closeTimer = null; closeGiftModal(); }, 250);
             } else {
-                content.style.transition = 'transform 0.25s ease-out';
-                content.style.transform = '';
-                modal.style.background = '';
+                contentEl.style.transition = 'transform 0.2s, opacity 0.2s';
+                contentEl.style.transform = '';
+                contentEl.style.opacity = '';
             }
         }, { passive: true });
     })();

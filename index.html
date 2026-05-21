@@ -1930,12 +1930,16 @@
 
     // Gift modal
     function openGiftModal(gift) {
+        const mOverlay = document.getElementById("giftModal");
+        const mContent = document.getElementById("modalContent");
+        mOverlay.style.background = '';
+        mContent.style.transform = '';
+        mContent.style.transition = '';
         selectedGift = gift;
-        const modal = document.getElementById("modalContent");
         const currLabel = gift.currency === 'RUB' ? '₽' : gift.currency === 'Stars' ? '★' : 'TON';
-        modal.innerHTML = `
+        mContent.innerHTML = `
             <div class="modal-drag"></div>
-            <img src="${gift.img}" class="modal-img" onerror="this.src='https://placehold.co/400/1a1a2e/ffffff?text=Gift&font=raleway';this.style.objectFit='contain';this.style.padding='20%'"
+            <img src="${gift.img}" class="modal-img" onerror="this.src='https://placehold.co/400/1a1a2e/ffffff?text=Gift&font=raleway';this.style.objectFit='contain';this.style.padding='20%'">
             <div class="modal-title">${escapeHtml(gift.name)}</div>
             <div class="modal-number">${gift.number}</div>
             <div class="modal-traits">
@@ -1967,7 +1971,14 @@
         document.getElementById("modalBuyBtn").onclick = () => buyGift();
     }
 
-    function closeGiftModal() { document.getElementById("giftModal").classList.remove("open"); }
+    function closeGiftModal() {
+        const m = document.getElementById("giftModal");
+        const c = document.getElementById("modalContent");
+        m.style.background = '';
+        c.style.transform = '';
+        c.style.transition = '';
+        m.classList.remove("open");
+    }
 
     function buyGift() {
         if (!selectedGift) return;
@@ -2330,51 +2341,40 @@
         }, { passive: true });
     })();
 
-    // Telegram WebApp integration
-    (function() {
+    // Telegram safe area — поднимаем весь контент под безопасную зону
+    function applyTgSafeArea() {
+        const tg = window.Telegram?.WebApp;
+        if (!tg) return;
+        const app = document.getElementById('app');
+        if (!app) return;
+        const safeInset = window.innerHeight - (tg.viewportStableHeight || window.innerHeight);
+        if (safeInset > 0) {
+            app.style.paddingTop = (safeInset + 4) + 'px';
+        }
+    }
+    // Загружаем данные Telegram: ник + аватарка
+    function applyTgProfile() {
         try {
             const tg = window.Telegram?.WebApp;
             if (!tg) return;
-            tg.ready();
-            tg.expand();
-            tg.setHeaderColor && tg.setHeaderColor('#000000');
-            tg.enableClosingConfirmation && tg.enableClosingConfirmation();
-
-            // Safe area
-            const topBar = document.querySelector('.top-bar');
-            if (topBar && tg.viewportStableHeight) {
-                const safeInset = window.innerHeight - tg.viewportStableHeight;
-                if (safeInset > 0) {
-                    topBar.style.paddingTop = (safeInset + 12) + 'px';
+            if (!tg.initDataUnsafe?.user) return;
+            const user = tg.initDataUnsafe.user;
+            const displayName = user.username || [user.first_name, user.last_name].filter(Boolean).join(' ') || 'User';
+            const nameEl = document.querySelector('.profile-name');
+            if (nameEl) nameEl.innerText = displayName;
+            const avatar = document.querySelector('.profile-avatar');
+            if (avatar) {
+                if (user.photo_url) {
+                    avatar.style.backgroundImage = `url(${user.photo_url})`;
+                    avatar.style.backgroundSize = 'cover';
+                    avatar.innerHTML = '';
+                } else {
+                    const letter = (user.first_name || 'U')[0].toUpperCase();
+                    avatar.innerHTML = `<span style="font-size:34px;font-weight:700">${letter}</span>`;
                 }
             }
-            tg.onEvent('viewportChanged', function() {
-                const safeInset = window.innerHeight - tg.viewportStableHeight;
-                if (topBar && safeInset > 0) {
-                    topBar.style.paddingTop = (safeInset + 12) + 'px';
-                }
-            });
-
-            const user = tg.initDataUnsafe?.user;
-            if (user) {
-                const displayName = user.username || [user.first_name, user.last_name].filter(Boolean).join(' ') || 'User';
-                const nameEl = document.querySelector('.profile-name');
-                if (nameEl) nameEl.innerText = displayName;
-
-                const avatar = document.querySelector('.profile-avatar');
-                if (avatar) {
-                    if (user.photo_url) {
-                        avatar.style.backgroundImage = `url(${user.photo_url})`;
-                        avatar.style.backgroundSize = 'cover';
-                        avatar.innerHTML = '';
-                    } else {
-                        const letter = (user.first_name || 'U')[0].toUpperCase();
-                        avatar.innerHTML = `<span style="font-size:28px;font-weight:700">${letter}</span>`;
-                    }
-                }
-            }
-        } catch(e) { console.warn('TG WebApp:', e); }
-    })();
+        } catch(e) { console.warn('TG profile:', e); }
+    }
 
     // Better image fallback
     document.addEventListener('error', (e) => {
@@ -2391,7 +2391,17 @@
     }
 
     (async () => {
+        // Telegram WebApp init
+        const tg = window.Telegram?.WebApp;
+        if (tg) { tg.ready(); tg.expand(); tg.setHeaderColor && tg.setHeaderColor('#000000'); }
+        applyTgSafeArea();
+        if (tg) tg.onEvent('viewportChanged', applyTgSafeArea);
+
         await loadFromCloud();
+
+        // Применяем профиль Telegram после загрузки данных
+        applyTgProfile();
+
         initBannerCarousel();
         renderMarket(); renderMyGiftsContent(); updateUI(); updatePaymentDisplay();
         setTimeout(() => {

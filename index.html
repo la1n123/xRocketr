@@ -88,6 +88,7 @@
         /* Top bar - glassmorphism */
         .top-bar {
             padding: 12px 16px;
+            padding-top: max(12px, constant(safe-area-inset-top, 12px), env(safe-area-inset-top, 12px));
             background: rgba(0,0,0,0.3);
             backdrop-filter: blur(var(--blur));
             -webkit-backdrop-filter: blur(var(--blur));
@@ -120,7 +121,7 @@
         .currency-chip i { font-size: 14px; }
 
         /* Content */
-        .content { flex: 1; overflow-y: auto; overflow-x: hidden; padding-bottom: 90px; }
+        .content { flex: 1; overflow-y: auto; overflow-x: hidden; padding-bottom: 90px; padding-top: 0; }
         .content::-webkit-scrollbar { width: 0; }
 
         .tab-pane { display: none; animation: fadeIn 0.3s; }
@@ -820,7 +821,7 @@
             -webkit-backdrop-filter: blur(var(--blur));
             border-top: 0.5px solid var(--glass-border);
             display: flex;
-            padding: 10px 0 max(10px, env(safe-area-inset-bottom));
+            padding: 10px 0 max(10px, constant(safe-area-inset-bottom, 10px), env(safe-area-inset-bottom, 10px));
             z-index: 100;
         }
         .nav-btn {
@@ -2287,34 +2288,45 @@
         if (e.target === document.getElementById("giftModal")) closeGiftModal();
     });
 
-    // Swipe to close modal
+    // Swipe to close modal — тянем вниз, отпускаем → закрывается
     (function() {
-        let startY = 0, currentY = 0, isDragging = false;
+        let startY = 0, currentY = 0, isDragging = false, moved = false;
         const modal = document.getElementById("giftModal");
         const content = document.getElementById("modalContent");
         modal.addEventListener("touchstart", (e) => {
-            if (e.target.closest('.modal-content')) {
-                startY = e.touches[0].clientY;
-                currentY = startY;
-                isDragging = true;
-            }
+            if (content.scrollTop > 0) return;
+            if (!e.target.closest('.modal-content')) return;
+            startY = e.touches[0].clientY;
+            currentY = startY;
+            isDragging = true;
+            moved = false;
+            content.style.transition = 'none';
         }, { passive: true });
         modal.addEventListener("touchmove", (e) => {
             if (!isDragging) return;
             currentY = e.touches[0].clientY;
             const diff = currentY - startY;
+            if (diff > 5) moved = true;
             if (diff > 0) {
-                content.style.transform = `translateY(${diff}px)`;
-                content.style.transition = 'none';
+                content.style.transform = `translateY(${diff * 0.6}px)`;
+                modal.style.background = `rgba(0,0,0,${Math.max(0, 0.85 - diff / 1000)})`;
+                e.preventDefault();
             }
-        }, { passive: true });
-        modal.addEventListener("touchend", () => {
+        }, { passive: false });
+        modal.addEventListener("touchend", (e) => {
             if (!isDragging) return;
             isDragging = false;
             const diff = currentY - startY;
-            content.style.transition = 'transform 0.3s';
-            content.style.transform = '';
-            if (diff > 100) closeGiftModal();
+            if (diff > 80 && moved) {
+                content.style.transition = 'transform 0.2s, opacity 0.2s';
+                content.style.transform = `translateY(${window.innerHeight}px)`;
+                modal.style.background = 'rgba(0,0,0,0)';
+                setTimeout(closeGiftModal, 200);
+            } else {
+                content.style.transition = 'transform 0.25s ease-out';
+                content.style.transform = '';
+                modal.style.background = '';
+            }
         }, { passive: true });
     })();
 
@@ -2322,25 +2334,46 @@
     (function() {
         try {
             const tg = window.Telegram?.WebApp;
-            if (tg) {
-                tg.ready();
-                tg.expand();
-                tg.enableClosingConfirmation && tg.enableClosingConfirmation();
-                const user = tg.initDataUnsafe?.user;
-                if (user) {
-                    const nameEl = document.querySelector('.profile-name');
-                    if (nameEl) nameEl.innerText = user.username || user.first_name || 'Telegram user';
+            if (!tg) return;
+            tg.ready();
+            tg.expand();
+            tg.setHeaderColor && tg.setHeaderColor('#000000');
+            tg.enableClosingConfirmation && tg.enableClosingConfirmation();
+
+            // Safe area
+            const topBar = document.querySelector('.top-bar');
+            if (topBar && tg.viewportStableHeight) {
+                const safeInset = window.innerHeight - tg.viewportStableHeight;
+                if (safeInset > 0) {
+                    topBar.style.paddingTop = (safeInset + 12) + 'px';
+                }
+            }
+            tg.onEvent('viewportChanged', function() {
+                const safeInset = window.innerHeight - tg.viewportStableHeight;
+                if (topBar && safeInset > 0) {
+                    topBar.style.paddingTop = (safeInset + 12) + 'px';
+                }
+            });
+
+            const user = tg.initDataUnsafe?.user;
+            if (user) {
+                const displayName = user.username || [user.first_name, user.last_name].filter(Boolean).join(' ') || 'User';
+                const nameEl = document.querySelector('.profile-name');
+                if (nameEl) nameEl.innerText = displayName;
+
+                const avatar = document.querySelector('.profile-avatar');
+                if (avatar) {
                     if (user.photo_url) {
-                        const avatar = document.querySelector('.profile-avatar');
-                        if (avatar) {
-                            avatar.style.backgroundImage = `url(${user.photo_url})`;
-                            avatar.style.backgroundSize = 'cover';
-                            avatar.innerHTML = '';
-                        }
+                        avatar.style.backgroundImage = `url(${user.photo_url})`;
+                        avatar.style.backgroundSize = 'cover';
+                        avatar.innerHTML = '';
+                    } else {
+                        const letter = (user.first_name || 'U')[0].toUpperCase();
+                        avatar.innerHTML = `<span style="font-size:28px;font-weight:700">${letter}</span>`;
                     }
                 }
             }
-        } catch(e) {}
+        } catch(e) { console.warn('TG WebApp:', e); }
     })();
 
     // Better image fallback

@@ -1537,6 +1537,13 @@
     let balances = { ton: 0, rub: 0, stars: 0, points: 0 };
     let paymentMethods = { card: null, ton: null, stars: null };
 
+    // User ID — уникальный для каждого браузера
+    let userId = localStorage.getItem("kupigifts_userId");
+    if (!userId) {
+        userId = 'user_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+        localStorage.setItem("kupigifts_userId", userId);
+    }
+
     let activeFilters = { collection: null, model: null, back: null, symbol: null };
     let priceMin = 0, priceMax = Infinity;
     let currentSort = "default";
@@ -1573,13 +1580,20 @@
         setBanner((currentBanner + 1) % totalBanners);
     }
 
-    // Cloud sync
+    // Cloud sync — marketGifts общие, остальное per-user
     async function saveToCloud() {
         try {
+            const r = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+                headers: { 'X-Master-Key': JSONBIN_API_KEY }
+            });
+            const existing = r.ok ? (await r.json()).record : { marketGifts: [], users: {} };
+            existing.marketGifts = marketGifts;
+            existing.users = existing.users || {};
+            existing.users[userId] = { myGifts, balances, paymentMethods };
             await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY },
-                body: JSON.stringify({ marketGifts, myGifts, balances, paymentMethods })
+                body: JSON.stringify(existing)
             });
         } catch(e) { console.error(e); }
     }
@@ -1592,15 +1606,21 @@
             if (!r.ok) throw new Error('Load failed');
             const data = await r.json();
             marketGifts = data.record.marketGifts || [];
-            myGifts = data.record.myGifts || [];
-            balances = data.record.balances || { ton: 0, rub: 0, stars: 0, points: 0 };
-            paymentMethods = data.record.paymentMethods || { card: null, ton: null, stars: null };
+            const userData = (data.record.users || {})[userId] || {};
+            myGifts = userData.myGifts || [];
+            balances = userData.balances || { ton: 0, rub: 0, stars: 0, points: 0 };
+            paymentMethods = userData.paymentMethods || { card: null, ton: null, stars: null };
             updateUI(); renderMarket(); renderMyGiftsContent(); updatePaymentDisplay();
-            toast('Данные загружены');
         } catch(e) {
-            marketGifts = []; myGifts = [];
-            balances = { ton: 0, rub: 0, stars: 0, points: 0 };
-            paymentMethods = { card: null, ton: null, stars: null };
+            marketGifts = [];
+            const saved = localStorage.getItem("kupigifts_market");
+            if (saved) marketGifts = JSON.parse(saved);
+            const umy = localStorage.getItem("kupigifts_my");
+            myGifts = umy ? JSON.parse(umy) : [];
+            const ubal = localStorage.getItem("kupigifts_bal");
+            balances = ubal ? JSON.parse(ubal) : { ton: 0, rub: 0, stars: 0, points: 0 };
+            const upay = localStorage.getItem("kupigifts_payment");
+            paymentMethods = upay ? JSON.parse(upay) : { card: null, ton: null, stars: null };
             await saveToCloud(); updateUI(); renderMarket(); renderMyGiftsContent(); updatePaymentDisplay();
         }
     }

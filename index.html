@@ -7,657 +7,200 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
         :root {
-            --bg: #0D0D0D;
-            --bg2: #161616;
-            --bg3: #1E1E1E;
-            --border: #2A2A2A;
-            --border2: #333;
-            --text: #FFFFFF;
-            --text2: #888;
-            --text3: #555;
-            --accent: #3B82F6;
-            --accent2: #60A5FA;
-            --ton: #2CAFE9;
-            --ton-bg: rgba(44,175,233,0.12);
-            --gold: #F5C518;
-            --green: #22C55E;
-            --radius: 14px;
-            --radius-sm: 8px;
-            --radius-lg: 20px;
+            --bg: #0D0D0D; --bg2: #161616; --bg3: #1E1E1E;
+            --border: #2A2A2A; --border2: #333;
+            --text: #FFFFFF; --text2: #888; --text3: #555;
+            --accent: #3B82F6; --accent2: #60A5FA;
+            --ton: #2CAFE9; --ton-bg: rgba(44,175,233,0.12);
+            --gold: #F5C518; --green: #22C55E;
+            --radius: 14px; --radius-sm: 8px; --radius-lg: 20px;
             --glow: 0 0 6px rgba(59,130,246,0.4);
         }
-
-        body {
-            background: var(--bg);
-            font-family: 'Inter', -apple-system, sans-serif;
-            color: var(--text);
-            height: 100vh;
-            overflow: hidden;
-            font-size: 14px;
-        }
-
-        /* Preloader */
-        #preloader {
-            position: fixed; inset: 0; background: var(--bg);
-            z-index: 1000; display: flex; align-items: center; justify-content: center;
-            transition: opacity 0.3s;
-        }
+        body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--text); height: 100vh; overflow: hidden; font-size: 14px; }
+        #preloader { position: fixed; inset: 0; background: var(--bg); z-index: 1000; display: flex; align-items: center; justify-content: center; transition: opacity 0.3s; }
         #preloader.hide { opacity: 0; pointer-events: none; }
-        .loader-ring {
-            width: 36px; height: 36px; border-radius: 50%;
-            border: 3px solid var(--border2);
-            border-top-color: var(--accent);
-            animation: spin 0.7s linear infinite;
-        }
+        .loader-ring { width: 36px; height: 36px; border: 3px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* App */
         #app { display: flex; flex-direction: column; height: 100vh; opacity: 0; transition: opacity 0.25s; }
         #app.show { opacity: 1; }
-
-        /* Top bar */
-        .top-bar {
-            padding: 12px 16px;
-            background: var(--bg);
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-shrink: 0;
-        }
+        .top-bar { padding: 12px 16px; background: var(--bg); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
         .top-bar-left { display: flex; align-items: center; gap: 10px; }
-        .logo {
-            font-size: 16px; font-weight: 700; color: var(--text);
-            letter-spacing: -0.3px;
-        }
-        .top-currencies { display: flex; gap: 8px; align-items: center; }
-        .top-chip {
-            display: flex; align-items: center; gap: 5px;
-            background: var(--bg2);
-            border: 1px solid var(--border);
-            border-radius: 40px;
-            padding: 5px 10px;
-            font-size: 12px; font-weight: 600;
-        }
+        .logo { font-size: 16px; font-weight: 700; }
+        .top-currencies { display: flex; gap: 8px; }
+        .top-chip { display: flex; align-items: center; gap: 5px; background: var(--bg2); border: 1px solid var(--border); border-radius: 40px; padding: 5px 10px; font-size: 12px; font-weight: 600; }
         .top-chip.ton { color: var(--ton); }
         .top-chip.gold { color: var(--gold); }
-        .top-chip svg { flex-shrink: 0; }
-
-        /* Content */
-        .content { flex: 1; overflow-y: auto; overflow-x: hidden; padding-bottom: 80px; }
-        .content::-webkit-scrollbar { width: 0; }
-
-        /* Tabs */
+        .content { flex: 1; overflow-y: auto; padding-bottom: 80px; }
         .tab-pane { display: none; }
         .tab-pane.active { display: block; }
-
-        /* ===== MARKET ===== */
-        .market-banner {
-            margin: 12px 16px;
-            background: linear-gradient(135deg, #1a1f3a 0%, #0f1726 50%, #1a1f3a 100%);
-            border-radius: var(--radius-lg);
-            padding: 18px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            overflow: hidden;
-            position: relative;
-            border: 1px solid rgba(59,130,246,0.2);
-        }
+        .market-banner { margin: 12px 16px; background: linear-gradient(135deg, #1a1f3a 0%, #0f1726 50%, #1a1f3a 100%); border-radius: var(--radius-lg); padding: 18px 20px; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(59,130,246,0.2); }
         .banner-text { z-index: 1; }
-        .banner-title { font-size: 22px; font-weight: 800; color: #fff; line-height: 1.1; }
-        .banner-sub {
-            margin-top: 6px;
-            background: var(--accent);
-            display: inline-block;
-            padding: 4px 14px;
-            border-radius: 30px;
-            font-size: 13px; font-weight: 700;
-        }
-        .banner-img {
-            width: 80px; height: 80px; font-size: 50px;
-            display: flex; align-items: center; justify-content: center;
-            filter: drop-shadow(0 0 12px rgba(59,130,246,0.4));
-        }
-
-        .section-header {
-            display: flex; align-items: center; gap: 16px;
-            padding: 12px 16px 8px;
-        }
-        .section-tab {
-            font-size: 15px; font-weight: 700; cursor: pointer;
-            color: var(--text2); transition: color 0.15s;
-        }
+        .banner-title { font-size: 22px; font-weight: 800; color: #fff; }
+        .banner-sub { margin-top: 6px; background: var(--accent); display: inline-block; padding: 4px 14px; border-radius: 30px; font-size: 13px; font-weight: 700; }
+        .banner-img { width: 80px; height: 80px; font-size: 50px; display: flex; align-items: center; justify-content: center; filter: drop-shadow(0 0 12px rgba(59,130,246,0.4)); }
+        .section-header { display: flex; align-items: center; gap: 16px; padding: 12px 16px 8px; }
+        .section-tab { font-size: 15px; font-weight: 700; cursor: pointer; color: var(--text2); }
         .section-tab.active { color: var(--text); }
-
-        .search-bar {
-            margin: 0 16px 10px;
-            background: var(--bg2);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 9px 14px;
-            display: flex; align-items: center; gap: 8px;
-            color: var(--text2); font-size: 14px;
-        }
-        .search-bar input {
-            background: none; border: none; outline: none;
-            color: var(--text); font-size: 14px; flex: 1;
-            font-family: inherit;
-        }
-        .search-bar input::placeholder { color: var(--text2); }
-        .search-bar input:focus { box-shadow: none; }
-
-        .filter-toolbar {
-            display: flex; align-items: center; gap: 6px;
-            padding: 0 16px 10px;
-            overflow-x: auto;
-        }
-        .filter-toolbar::-webkit-scrollbar { display: none; }
-
-        .filter-icon-btn {
-            width: 34px; height: 34px;
-            background: var(--bg2); border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; flex-shrink: 0; color: var(--text2);
-            transition: all 0.15s;
-        }
-        .filter-icon-btn:hover { border-color: var(--border2); color: var(--text); }
-
-        .divider-v { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; }
-
-        .filter-dropdown {
-            display: flex; align-items: center; gap: 5px;
-            background: var(--bg2); border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            padding: 0 11px; height: 34px;
-            font-size: 13px; font-weight: 500;
-            cursor: pointer; white-space: nowrap; flex-shrink: 0;
-            color: var(--text); transition: all 0.15s;
-            position: relative;
-            user-select: none;
-        }
-        .filter-dropdown.active {
-            border-color: var(--accent);
-            color: var(--accent2);
-            background: rgba(59,130,246,0.1);
-        }
-        .filter-dropdown:hover { border-color: var(--border2); }
-
-        .dropdown-panel {
-            position: fixed;
-            background: #1A1A1A;
-            border: 1px solid var(--border2);
-            border-radius: var(--radius);
-            z-index: 500;
-            min-width: 200px;
-            max-height: 260px;
-            overflow-y: auto;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.6);
-            padding: 6px;
-            display: none;
-        }
-        .dropdown-panel.open { display: block; }
-
-        .dropdown-option {
-            padding: 8px 12px;
-            border-radius: var(--radius-sm);
-            cursor: pointer;
-            font-size: 13px;
-            color: var(--text2);
-            transition: all 0.1s;
-            display: flex; align-items: center; justify-content: space-between;
-        }
-        .dropdown-option:hover { background: var(--bg3); color: var(--text); }
-        .dropdown-option.selected { color: var(--accent2); }
-        .dropdown-option.selected::after {
-            content: '✓';
-            font-size: 12px;
-            color: var(--accent);
-        }
-
-        .price-bar {
-            display: flex; align-items: center; gap: 6px;
-            margin: 0 16px 12px;
-            background: var(--bg2); border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            padding: 7px 12px;
-        }
-        .price-bar input {
-            background: none; border: none; outline: none;
-            color: var(--text); font-size: 12px; width: 60px; font-family: inherit;
-        }
-        .price-bar input:focus { box-shadow: none; }
+        .search-bar { margin: 0 16px 10px; background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 9px 14px; display: flex; align-items: center; gap: 8px; color: var(--text2); }
+        .search-bar input { background: none; border: none; outline: none; color: var(--text); font-size: 14px; flex: 1; }
+        .filter-toolbar { display: flex; align-items: center; gap: 6px; padding: 0 16px 10px; overflow-x: auto; }
+        .filter-icon-btn { width: 34px; height: 34px; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text2); }
+        .filter-dropdown { display: flex; align-items: center; gap: 5px; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0 11px; height: 34px; font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap; color: var(--text); }
+        .filter-dropdown.active { border-color: var(--accent); color: var(--accent2); background: rgba(59,130,246,0.1); }
+        .divider-v { width: 1px; height: 20px; background: var(--border); }
+        .filter-row { display: flex; gap: 8px; overflow-x: auto; margin: 0 16px 12px; }
+        .filter-pill { padding: 6px 16px; background: var(--bg2); border: 1px solid var(--border); border-radius: 40px; font-size: 12px; font-weight: 500; white-space: nowrap; cursor: pointer; }
+        .filter-pill.active, .filter-pill:hover { background: rgba(59,130,246,0.2); border-color: var(--accent); color: var(--accent2); }
+        .price-bar { display: flex; align-items: center; gap: 6px; margin: 0 16px 12px; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 7px 12px; }
+        .price-bar input { background: none; border: none; outline: none; color: var(--text); font-size: 12px; width: 60px; }
         .price-bar input::placeholder { color: var(--text3); }
-        .price-sep { color: var(--text3); font-size: 12px; }
+        .price-sep { color: var(--text3); }
         .price-bar-btns { display: flex; gap: 6px; margin-left: auto; }
-        .price-bar-btn {
-            padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
-            cursor: pointer; border: none; font-family: inherit;
-            transition: 0.1s;
-        }
+        .price-bar-btn { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; cursor: pointer; border: none; }
         .price-bar-btn.apply { background: var(--accent); color: #fff; }
         .price-bar-btn.reset { background: var(--bg3); color: var(--text2); }
-
-        .sort-row {
-            display: flex; gap: 6px;
-            padding: 0 16px 12px;
-            justify-content: flex-end;
-        }
-        .sort-btn {
-            padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;
-            background: var(--bg2); border: 1px solid var(--border);
-            color: var(--text2); cursor: pointer; transition: all 0.15s; font-family: inherit;
-        }
-        .sort-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-
-        .gifts-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1px;
-            background: var(--border);
-            margin: 0 16px;
-            border-radius: var(--radius);
-            overflow: hidden;
-        }
+        .sort-row { display: flex; justify-content: flex-end; padding: 0 16px 12px; gap: 6px; }
+        .sort-btn { padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; background: var(--bg2); border: 1px solid var(--border); color: var(--text2); cursor: pointer; }
+        .sort-btn.active { background: var(--accent); color: #fff; }
+        .gifts-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); margin: 0 16px; border-radius: var(--radius); overflow: hidden; }
         @media (min-width: 500px) { .gifts-grid { grid-template-columns: repeat(4, 1fr); } }
-
-        .gift-card {
-            background: var(--bg2);
-            padding: 10px 8px;
-            cursor: pointer;
-            transition: background 0.15s;
-            position: relative;
-            display: flex; flex-direction: column; align-items: center;
-            gap: 6px;
-        }
+        .gift-card { background: var(--bg2); padding: 10px 8px; cursor: pointer; transition: background 0.15s; position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; }
         .gift-card:hover { background: var(--bg3); }
-
-        .gift-img-wrap {
-            width: 100%; aspect-ratio: 1;
-            border-radius: 10px;
-            overflow: hidden;
-            position: relative;
-            background: var(--bg3);
-        }
-        .gift-img {
-            width: 100%; height: 100%; object-fit: cover;
-        }
-        .gift-rarity-dot {
-            position: absolute; top: 5px; left: 5px;
-            width: 8px; height: 8px; border-radius: 50%;
-            background: #22c55e;
-        }
+        .gift-img-wrap { width: 100%; aspect-ratio: 1; border-radius: 10px; overflow: hidden; position: relative; background: var(--bg3); }
+        .gift-img { width: 100%; height: 100%; object-fit: cover; }
+        .gift-rarity-dot { position: absolute; top: 5px; left: 5px; width: 8px; height: 8px; border-radius: 50%; background: #22c55e; }
         .gift-rarity-dot.rare { background: #3b82f6; }
         .gift-rarity-dot.epic { background: #a855f7; }
         .gift-rarity-dot.legendary { background: #f59e0b; }
         .gift-rarity-dot.mythic { background: #ef4444; }
-
         .gift-info { width: 100%; }
-        .gift-name { font-size: 11px; font-weight: 600; color: var(--text); text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .gift-name { font-size: 11px; font-weight: 600; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .gift-number { font-size: 10px; color: var(--text2); }
-
-        .gift-price-row {
-            display: flex; align-items: center; justify-content: space-between; width: 100%;
-            margin-top: 2px;
-        }
-        .gift-price {
-            display: flex; align-items: center; gap: 4px;
-            background: var(--ton-bg);
-            border-radius: 20px;
-            padding: 3px 8px;
-            font-size: 12px; font-weight: 700; color: var(--ton);
-        }
-        .gift-cart-btn {
-            width: 26px; height: 26px; border-radius: 8px;
-            background: var(--bg3); border: 1px solid var(--border2);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 12px; cursor: pointer; transition: all 0.15s;
-        }
-        .gift-cart-btn:hover { background: var(--accent); border-color: var(--accent); }
-
-        .empty-state {
-            text-align: center; padding: 60px 20px; color: var(--text2);
-        }
+        .gift-price-row { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-top: 2px; }
+        .gift-price { display: flex; align-items: center; gap: 4px; background: var(--ton-bg); border-radius: 20px; padding: 3px 8px; font-size: 12px; font-weight: 700; color: var(--ton); }
+        .gift-cart-btn { width: 26px; height: 26px; border-radius: 8px; background: var(--bg3); border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; font-size: 12px; cursor: pointer; }
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--text2); }
         .empty-state-icon { font-size: 48px; margin-bottom: 12px; }
-        .empty-state h3 { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
-
-        /* ===== MY GIFTS ===== */
-        .my-gifts-header {
-            padding: 16px;
-        }
-        .my-gifts-top-tabs {
-            display: flex; gap: 16px; align-items: center;
-            margin-bottom: 14px;
-        }
-        .my-top-tab {
-            font-size: 15px; font-weight: 700;
-            color: var(--text2); cursor: pointer; transition: color 0.15s;
-        }
+        .my-gifts-header { padding: 16px; }
+        .my-gifts-top-tabs { display: flex; gap: 16px; margin-bottom: 14px; }
+        .my-top-tab { font-size: 15px; font-weight: 700; color: var(--text2); cursor: pointer; }
         .my-top-tab.active { color: var(--text); }
-
-        .commission-banner {
-            background: linear-gradient(135deg, #0f1726 0%, #1a2040 100%);
-            border-radius: var(--radius);
-            padding: 12px 16px;
-            display: flex; align-items: center; gap: 12px;
-            border: 1px solid rgba(59,130,246,0.2);
-            margin-bottom: 12px;
-        }
-        .commission-banner .flame { font-size: 20px; }
-        .commission-text { flex: 1; font-size: 12px; font-weight: 600; color: var(--text2); }
-        .commission-text strong { color: var(--text); display: block; font-size: 14px; }
-        .commission-banner-img { font-size: 32px; }
-
-        .action-btns {
-            display: grid; grid-template-columns: repeat(4, 1fr);
-            gap: 8px; margin-bottom: 14px;
-        }
-        .action-btn {
-            background: var(--bg2); border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 10px 6px;
-            display: flex; flex-direction: column; align-items: center; gap: 5px;
-            cursor: pointer; font-size: 11px; font-weight: 600; color: var(--text2);
-            transition: all 0.15s;
-        }
-        .action-btn:hover { border-color: var(--border2); color: var(--text); }
-
-        .listing-toggle {
-            display: flex; background: var(--bg2); border-radius: 10px;
-            padding: 3px; margin-bottom: 12px;
-        }
-        .listing-tab {
-            flex: 1; padding: 7px; text-align: center;
-            font-size: 13px; font-weight: 600; color: var(--text2);
-            border-radius: 8px; cursor: pointer; transition: all 0.15s;
-        }
+        .commission-banner { background: linear-gradient(135deg, #0f1726 0%, #1a2040 100%); border-radius: var(--radius); padding: 12px 16px; display: flex; align-items: center; gap: 12px; margin-bottom: 12px; border: 1px solid rgba(59,130,246,0.2); }
+        .action-btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+        .action-btn { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 6px; display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; font-size: 11px; font-weight: 600; color: var(--text2); }
+        .listing-toggle { display: flex; background: var(--bg2); border-radius: 10px; padding: 3px; margin-bottom: 12px; }
+        .listing-tab { flex: 1; padding: 7px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text2); border-radius: 8px; cursor: pointer; }
         .listing-tab.active { background: var(--bg); color: var(--text); }
-        .listing-tab .count {
-            display: inline-block; background: var(--bg3); border-radius: 10px;
-            padding: 0 6px; font-size: 11px; margin-left: 4px;
-        }
-        .listing-tab.active .count { background: var(--border); }
-
-        .my-filter-row {
-            display: flex; gap: 6px; overflow-x: auto; margin-bottom: 12px;
-        }
-        .my-filter-row::-webkit-scrollbar { display: none; }
-
-        /* ===== PROFILE ===== */
+        .my-filter-row { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 12px; }
         .profile-section { padding: 16px; }
-        .profile-card {
-            background: var(--bg2); border: 1px solid var(--border);
-            border-radius: var(--radius-lg); overflow: hidden;
-        }
-        .profile-header-bg {
-            height: 80px;
-            background: linear-gradient(135deg, #1a1f3a, #0f1726);
-            position: relative;
-        }
+        .profile-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+        .profile-header-bg { height: 80px; background: linear-gradient(135deg, #1a1f3a, #0f1726); }
         .profile-body { padding: 0 20px 20px; }
-        .profile-avatar {
-            width: 64px; height: 64px; border-radius: 50%;
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-            border: 3px solid var(--bg2);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 28px;
-            margin-top: -32px; margin-bottom: 10px;
-            cursor: pointer; transition: transform 0.15s;
-            box-shadow: 0 4px 16px rgba(59,130,246,0.3);
-        }
-        .profile-avatar:hover { transform: scale(1.04); }
+        .profile-avatar { width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border: 3px solid var(--bg2); display: flex; align-items: center; justify-content: center; font-size: 28px; margin-top: -32px; margin-bottom: 10px; cursor: pointer; box-shadow: 0 4px 16px rgba(59,130,246,0.3); }
         .profile-name { font-size: 18px; font-weight: 700; }
-        .profile-stars { color: var(--gold); font-size: 13px; font-weight: 500; margin: 3px 0 12px; }
-        .profile-balance {
-            font-size: 28px; font-weight: 800;
-            color: var(--text);
-        }
-        .profile-stats {
-            display: grid; grid-template-columns: 1fr 1fr;
-            gap: 8px; margin-top: 14px;
-        }
-        .profile-stat {
-            background: var(--bg3); border-radius: var(--radius);
-            padding: 12px; text-align: center;
-        }
+        .profile-stars { color: var(--gold); font-size: 13px; margin: 3px 0 12px; }
+        .profile-balance { font-size: 28px; font-weight: 800; }
+        .profile-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+        .profile-stat { background: var(--bg3); border-radius: var(--radius); padding: 12px; text-align: center; }
         .profile-stat-val { font-size: 22px; font-weight: 800; }
-        .profile-stat-label { font-size: 11px; color: var(--text2); margin-top: 2px; }
-
-        /* Payment management */
-        .payment-section {
-            background: var(--bg2);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            padding: 16px;
-            margin-top: 12px;
-        }
-        .payment-title {
-            font-size: 14px; font-weight: 700; margin-bottom: 14px;
-            display: flex; align-items: center; gap: 8px;
-        }
-        .payment-field {
-            margin-bottom: 14px;
-        }
-        .payment-field label {
-            display: block; font-size: 12px; color: var(--text2); margin-bottom: 6px;
-        }
-        .payment-field input {
-            width: 100%; padding: 10px 12px;
-            background: var(--bg3); border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            color: var(--text); font-size: 13px;
-            font-family: inherit; transition: all 0.15s;
-        }
-        .payment-field input:focus {
-            outline: none;
-            border-color: var(--accent);
-            box-shadow: var(--glow);
-        }
-        .save-req-btn {
-            background: var(--accent); border: none;
-            width: 100%; padding: 11px;
-            border-radius: var(--radius);
-            font-weight: 700; color: #fff;
-            cursor: pointer; margin-top: 8px;
-            transition: 0.15s;
-            font-family: inherit;
-        }
-        .save-req-btn:hover { opacity: 0.85; box-shadow: var(--glow); }
-
-        .invite-section {
-            background: var(--bg2); border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            padding: 16px; margin-top: 12px;
-        }
+        .payment-section { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px; margin-top: 12px; }
+        .payment-title { font-size: 14px; font-weight: 700; margin-bottom: 14px; }
+        .payment-field { margin-bottom: 14px; }
+        .payment-field label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 6px; }
+        .payment-field input { width: 100%; padding: 10px 12px; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-size: 13px; }
+        .payment-field input:focus { outline: none; border-color: var(--accent); box-shadow: var(--glow); }
+        .save-req-btn { background: var(--accent); border: none; width: 100%; padding: 11px; border-radius: var(--radius); font-weight: 700; color: #fff; cursor: pointer; margin-top: 8px; }
+        .invite-section { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px; margin-top: 12px; }
         .invite-label { font-size: 10px; font-weight: 700; letter-spacing: 0.5px; color: var(--text3); text-transform: uppercase; margin-bottom: 6px; }
-        .invite-title { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+        .invite-title { font-size: 14px; font-weight: 700; }
         .invite-sub { font-size: 12px; color: var(--text2); margin-bottom: 12px; }
-        .invite-btn {
-            width: 100%; padding: 12px;
-            background: var(--accent); color: #fff;
-            border: none; border-radius: var(--radius);
-            font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit;
-            transition: all 0.15s;
-        }
-        .invite-btn:hover { opacity: 0.85; box-shadow: var(--glow); }
-
+        .invite-btn { width: 100%; padding: 12px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius); font-weight: 700; cursor: pointer; }
         .manager-link { margin-top: 12px; font-size: 12px; color: var(--text2); }
-        .manager-link a { color: var(--accent2); text-decoration: none; font-weight: 600; }
-
-        /* Bottom nav */
-        .bottom-nav {
-            position: fixed; bottom: 0; left: 0; right: 0;
-            background: rgba(13,13,13,0.96);
-            backdrop-filter: blur(20px);
-            border-top: 1px solid var(--border);
-            display: flex; padding: 8px 0 12px;
-            z-index: 100;
-        }
-        .nav-btn {
-            flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
-            background: none; border: none; color: var(--text2);
-            font-size: 10px; font-weight: 600; padding: 4px 0;
-            cursor: pointer; transition: color 0.15s; font-family: inherit;
-        }
+        .manager-link a { color: var(--accent2); text-decoration: none; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(13,13,13,0.96); backdrop-filter: blur(20px); border-top: 1px solid var(--border); display: flex; padding: 8px 0 12px; z-index: 100; }
+        .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; background: none; border: none; color: var(--text2); font-size: 10px; font-weight: 600; padding: 4px 0; cursor: pointer; }
         .nav-btn.active { color: var(--accent); }
-        .nav-icon { font-size: 22px; line-height: 1; }
-
-        /* Modal — bottom sheet */
-        .modal-overlay {
-            position: fixed; inset: 0;
-            background: rgba(0,0,0,0.75);
-            backdrop-filter: blur(8px);
-            z-index: 200; display: flex; align-items: flex-end; justify-content: center;
-            opacity: 0; pointer-events: none; transition: opacity 0.2s;
-        }
+        .nav-icon { font-size: 22px; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); z-index: 200; display: flex; align-items: flex-end; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
         .modal-overlay.open { opacity: 1; pointer-events: all; }
-        .modal-content {
-            background: #161616;
-            border-radius: 20px 20px 0 0;
-            width: 100%; max-width: 480px;
-            padding: 4px 20px 20px;
-            transform: translateY(20px); transition: transform 0.2s;
-            border-top: 1px solid var(--border);
-            max-height: 90vh; overflow-y: auto;
-        }
+        .modal-content { background: #161616; border-radius: 20px 20px 0 0; width: 100%; max-width: 480px; padding: 4px 20px 20px; transform: translateY(20px); transition: transform 0.2s; border-top: 1px solid var(--border); max-height: 90vh; overflow-y: auto; }
         .modal-overlay.open .modal-content { transform: translateY(0); }
         .modal-drag { width: 40px; height: 4px; background: var(--border2); border-radius: 4px; margin: 10px auto 16px; }
-
-        .modal-img {
-            width: 100%; border-radius: var(--radius);
-            margin-bottom: 14px; background: var(--bg3);
-            aspect-ratio: 1; object-fit: cover;
-        }
+        .modal-img { width: 100%; border-radius: var(--radius); margin-bottom: 14px; background: var(--bg3); aspect-ratio: 1; object-fit: cover; }
         .modal-gift-name { font-size: 20px; font-weight: 800; }
         .modal-gift-num { font-size: 13px; color: var(--text2); margin-top: 2px; margin-bottom: 14px; }
-
         .modal-traits { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 16px; }
-        .modal-trait {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 11px 14px; border-bottom: 1px solid var(--border);
-            font-size: 13px;
-        }
+        .modal-trait { display: flex; justify-content: space-between; align-items: center; padding: 11px 14px; border-bottom: 1px solid var(--border); font-size: 13px; }
         .modal-trait:last-child { border-bottom: none; }
         .modal-trait-key { color: var(--text2); }
-        .modal-trait-right { display: flex; align-items: center; gap: 10px; }
         .modal-trait-val { color: var(--accent2); font-weight: 600; }
-        .modal-trait-rarity { font-size: 11px; color: var(--text2); }
-        .modal-trait-price { font-size: 13px; font-weight: 700; color: var(--ton); }
-
         .modal-price { font-size: 11px; color: var(--text2); text-align: center; margin-bottom: 6px; }
         .modal-price strong { font-size: 28px; font-weight: 800; color: var(--text); display: block; }
-
         .modal-btn-row { display: flex; gap: 8px; }
-        .modal-offer-btn {
-            flex: 1; padding: 13px; border-radius: 50px;
-            background: var(--bg3); border: 1px solid var(--border2);
-            color: var(--text); font-size: 14px; font-weight: 700;
-            cursor: pointer; font-family: inherit; transition: all 0.15s;
-        }
-        .modal-offer-btn:hover { border-color: var(--accent); }
-        .modal-offer-sub { font-size: 10px; color: var(--text2); display: block; font-weight: 400; margin-top: 2px; }
-        .modal-buy-btn {
-            flex: 2; padding: 13px; border-radius: 50px;
-            background: var(--accent); border: none;
-            color: #fff; font-size: 14px; font-weight: 700;
-            cursor: pointer; font-family: inherit; transition: opacity 0.15s;
-        }
-        .modal-buy-btn:hover { opacity: 0.85; }
-
-        /* Admin modal */
-        .admin-modal {
-            position: fixed; inset: 0;
-            background: rgba(0,0,0,0.95);
-            backdrop-filter: blur(20px);
-            z-index: 300; display: flex; align-items: center; justify-content: center;
-            opacity: 0; pointer-events: none; transition: 0.2s; padding: 20px;
-        }
+        .modal-offer-btn { flex: 1; padding: 13px; border-radius: 50px; background: var(--bg3); border: 1px solid var(--border2); color: var(--text); font-size: 14px; font-weight: 700; cursor: pointer; }
+        .modal-buy-btn { flex: 2; padding: 13px; border-radius: 50px; background: var(--accent); border: none; color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; }
+        .admin-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); backdrop-filter: blur(20px); z-index: 300; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: 0.2s; padding: 20px; }
         .admin-modal.open { opacity: 1; pointer-events: all; }
-        .admin-panel {
-            background: #1A1A24; border-radius: 32px;
-            padding: 24px; width: 100%; max-width: 550px; max-height: 85vh; overflow-y: auto;
-            border: 1px solid #00FF88;
-            box-shadow: 0 0 30px rgba(0,255,136,0.2);
-        }
+        .admin-panel { background: #1A1A24; border-radius: 32px; padding: 24px; width: 100%; max-width: 550px; max-height: 85vh; overflow-y: auto; border: 1px solid #00FF88; box-shadow: 0 0 30px rgba(0,255,136,0.2); }
         .admin-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid rgba(0,255,136,0.3); padding-bottom: 8px; }
-        .admin-tab { padding: 6px 16px; background: transparent; border-radius: 30px; cursor: pointer; font-size: 14px; font-weight: 600; color: #aaa; transition: 0.2s; }
+        .admin-tab { padding: 6px 16px; border-radius: 30px; cursor: pointer; font-size: 14px; font-weight: 600; color: #aaa; }
         .admin-tab.active { background: rgba(0,255,136,0.2); color: #00FF88; }
         .admin-tab-content { display: none; }
         .admin-tab-content.active { display: block; }
-        .admin-input, .admin-select {
-            width: 100%; padding: 12px; background: #0A0A0F;
-            border: 1px solid #2A2A35; border-radius: 20px; color: white;
-            margin-bottom: 12px; font-size: 14px; font-family: inherit;
-        }
-        .admin-btn {
-            padding: 12px; background: #00FF88; border: none; border-radius: 40px;
-            font-weight: 700; width: 100%; cursor: pointer; margin-top: 8px;
-            color: #050508; transition: 0.2s; font-family: inherit;
-        }
-        .admin-btn:hover { background: #00cc66; box-shadow: 0 0 8px #00FF88; }
+        .admin-input, .admin-select { width: 100%; padding: 12px; background: #0A0A0F; border: 1px solid #2A2A35; border-radius: 20px; color: white; margin-bottom: 12px; font-size: 14px; }
+        .admin-btn { padding: 12px; background: #00FF88; border: none; border-radius: 40px; font-weight: 700; width: 100%; cursor: pointer; margin-top: 8px; color: #050508; }
         .preview-img { width: 100%; border-radius: 20px; margin-top: 8px; max-height: 140px; object-fit: contain; background: #0A0A0F; }
         .admin-row { display: flex; gap: 8px; margin-bottom: 12px; }
         .admin-row > * { flex: 1; margin-bottom: 0; }
-
-        .toast {
-            position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
-            background: #1E1E1E; border: 1px solid var(--border2);
-            padding: 9px 20px; border-radius: 40px; font-size: 13px;
-            opacity: 0; transition: 0.2s; z-index: 400;
-            white-space: nowrap; backdrop-filter: blur(10px);
-            color: var(--text); font-weight: 500;
-        }
+        .toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: #1E1E1E; border: 1px solid var(--border2); padding: 9px 20px; border-radius: 40px; font-size: 13px; opacity: 0; transition: 0.2s; z-index: 400; white-space: nowrap; backdrop-filter: blur(10px); color: var(--text); }
         .toast.show { opacity: 1; }
     </style>
 </head>
 <body>
-
 <div id="preloader"><div class="loader-ring"></div></div>
-
 <div id="app">
     <div class="top-bar">
         <div class="top-bar-left"><div class="logo">KupiGifts</div></div>
         <div class="top-currencies">
-            <div class="top-chip gold"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg><span id="pointsVal">0</span></div>
-            <div class="top-chip ton"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L3 7l1.5 9L12 22l7.5-6L21 7z"/></svg><span id="tonVal">0</span> TON</div>
+            <div class="top-chip gold">⭐ <span id="pointsVal">0</span></div>
+            <div class="top-chip ton">◈ <span id="tonVal">0</span> TON</div>
+            <div class="top-chip" style="color:var(--gold)">★ <span id="starsVal">0</span></div>
         </div>
     </div>
-
     <div class="content">
         <!-- MARKET TAB -->
         <div class="tab-pane active" id="tab-market">
             <div class="market-banner"><div class="banner-text"><div class="banner-title">MGGA</div><div class="banner-sub">0% Commission</div></div><div class="banner-img">🐸</div></div>
-            <div class="section-header"><div class="section-tab active">All items</div><div class="section-tab" style="opacity:0.5">Collections</div></div>
+            <div class="section-header"><div class="section-tab active">All items</div><div class="section-tab">Collections</div></div>
             <div class="search-bar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="text" id="searchInput" placeholder="Quick find"></div>
             <div class="filter-toolbar" id="filterToolbar">
-                <div class="filter-icon-btn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg></div>
-                <div class="filter-icon-btn" id="sortToggleBtn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 16V4m0 0L3 8m4-4 4 4M17 8v12m0 0 4-4m-4 4-4-4"/></svg></div>
+                <div class="filter-icon-btn">≡</div>
+                <div class="filter-icon-btn" id="sortToggleBtn">↕️</div>
                 <div class="divider-v"></div>
-                <div class="filter-dropdown" id="dropCollection">Collection<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg></div>
-                <div class="filter-dropdown" id="dropModel">Model<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg></div>
-                <div class="filter-dropdown" id="dropBack">Back<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg></div>
-                <div class="filter-dropdown" id="dropSymbol">Symbol<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg></div>
+                <div class="filter-dropdown" id="dropCollection">Collection ▼</div>
+                <div class="filter-dropdown" id="dropModel">Model ▼</div>
+                <div class="filter-dropdown" id="dropBack">Back ▼</div>
+                <div class="filter-dropdown" id="dropSymbol">Symbol ▼</div>
             </div>
-            <div class="price-bar"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="2"><path d="M12 2L3 7l1.5 9L12 22l7.5-6L21 7z"/></svg><input type="number" id="priceMin" placeholder="Min"><span class="price-sep">—</span><input type="number" id="priceMax" placeholder="Max"><div class="price-bar-btns"><button class="price-bar-btn apply" id="applyPriceFilter">Apply</button><button class="price-bar-btn reset" id="resetPriceFilter">Reset</button></div></div>
+            <!-- контейнер для фильтров коллекций -->
+            <div class="filter-row" id="collectionFilters"></div>
+            <div class="price-bar"><span>₽</span><input type="number" id="priceMin" placeholder="Min"><span class="price-sep">—</span><input type="number" id="priceMax" placeholder="Max"><div class="price-bar-btns"><button class="price-bar-btn apply" id="applyPriceFilter">Apply</button><button class="price-bar-btn reset" id="resetPriceFilter">Reset</button></div></div>
+            <div class="sort-row"><button class="sort-btn" id="sortAsc">↑ Price</button><button class="sort-btn" id="sortDesc">↓ Price</button></div>
             <div class="gifts-grid" id="marketGrid"></div>
         </div>
-
         <!-- MY GIFTS TAB -->
         <div class="tab-pane" id="tab-mygifts">
             <div class="my-gifts-header">
                 <div class="my-gifts-top-tabs"><div class="my-top-tab active" data-tab="gifts">Gifts</div><div class="my-top-tab" data-tab="offers">Offers</div><div class="my-top-tab" data-tab="history">My activity</div></div>
-                <div class="commission-banner"><div class="flame">🔥</div><div class="commission-text"><strong>0% commission</strong>Cashback is disabled · Available to claim 0 ◈</div><div class="commission-banner-img">🐸</div></div>
-                <div class="action-btns"><div class="action-btn" data-action="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>Add</div><div class="action-btn" data-action="withdraw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>Withdraw</div><div class="action-btn" data-action="send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>Send</div><div class="action-btn" data-action="sell"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M8 10v4"/><path d="M16 10v4"/></svg>Sell</div></div>
+                <div class="commission-banner"><span class="flame">🔥</span><div class="commission-text"><strong>0% commission</strong>Cashback is disabled · Available to claim 0 ◈</div><div class="commission-banner-img">🐸</div></div>
+                <div class="action-btns"><div class="action-btn" data-action="add">➕ Add</div><div class="action-btn" data-action="withdraw">📤 Withdraw</div><div class="action-btn" data-action="send">📨 Send</div><div class="action-btn" data-action="sell">🏷️ Sell</div></div>
                 <div class="listing-toggle"><div class="listing-tab active" data-list="unlisted">Not выставл. <span class="count">0</span></div><div class="listing-tab" data-list="listed">Выставл. <span class="count">0</span></div></div>
                 <div class="my-filter-row"><div class="filter-dropdown">Collection</div><div class="filter-dropdown">Model</div><div class="filter-dropdown">Backdrop</div><div class="filter-dropdown">Symbol</div></div>
                 <div id="myGiftsList"></div>
             </div>
         </div>
-
-        <!-- PROFILE TAB с управлением реквизитами -->
+        <!-- PROFILE TAB -->
         <div class="tab-pane" id="tab-profile">
             <div class="profile-section">
                 <div class="profile-card">
@@ -667,85 +210,33 @@
                         <div class="profile-name">crypto_panda</div>
                         <div class="profile-stars">⭐ 4.92 ★</div>
                         <div class="profile-balance"><span id="profileRub">0</span> ₽</div>
-                        <div class="profile-stats">
-                            <div class="profile-stat"><div class="profile-stat-val" id="purchasedCount">0</div><div class="profile-stat-label">Purchased</div></div>
-                            <div class="profile-stat"><div class="profile-stat-val" id="soldCount">0</div><div class="profile-stat-label">Sold</div></div>
-                        </div>
+                        <div class="profile-stats"><div class="profile-stat"><div class="profile-stat-val" id="purchasedCount">0</div><div class="profile-stat-label">Purchased</div></div><div class="profile-stat"><div class="profile-stat-val" id="soldCount">0</div><div class="profile-stat-label">Sold</div></div></div>
                     </div>
                 </div>
-
-                <!-- Payment management -->
                 <div class="payment-section">
                     <div class="payment-title">💳 Payment details</div>
-                    <div class="payment-field">
-                        <label>💳 Russian card (МИР / Visa / Mastercard)</label>
-                        <input type="text" id="cardNumber" placeholder="0000 0000 0000 0000" maxlength="19">
-                    </div>
-                    <div class="payment-field">
-                        <label>⭐ Telegram Stars (аккаунт)</label>
-                        <input type="text" id="starsAccount" placeholder="@username или ID">
-                    </div>
-                    <div class="payment-field">
-                        <label>◈ Tonkeeper wallet</label>
-                        <input type="text" id="tonkeeperAddr" placeholder="EQD... или UQ...">
-                    </div>
+                    <div class="payment-field"><label>💳 Russian card (МИР / Visa / Mastercard)</label><input type="text" id="cardNumber" placeholder="0000 0000 0000 0000"></div>
+                    <div class="payment-field"><label>⭐ Telegram Stars (аккаунт)</label><input type="text" id="starsAccount" placeholder="@username или ID"></div>
+                    <div class="payment-field"><label>◈ Tonkeeper wallet</label><input type="text" id="tonkeeperAddr" placeholder="EQD... или UQ..."></div>
                     <button class="save-req-btn" id="savePaymentBtn">💾 Save details</button>
                 </div>
-
-                <div class="invite-section">
-                    <div class="invite-label">INVITE FRIENDS</div>
-                    <div class="invite-title">KupiGifts</div>
-                    <div class="invite-sub">Invite a friend to get a gift</div>
-                    <button class="invite-btn">Invite</button>
-                </div>
-
+                <div class="invite-section"><div class="invite-label">INVITE FRIENDS</div><div class="invite-title">KupiGifts</div><div class="invite-sub">Invite a friend to get a gift</div><button class="invite-btn">Invite</button></div>
                 <div class="manager-link">📞 For adding gifts contact <a href="https://t.me/ManagerKupiKod" target="_blank">@ManagerKupiKod</a></div>
             </div>
         </div>
     </div>
-
     <div class="bottom-nav">
         <button class="nav-btn active" data-tab="market"><span class="nav-icon">🛒</span><span>Market</span></button>
         <button class="nav-btn" data-tab="mygifts"><span class="nav-icon">🎁</span><span>My Gifts</span></button>
         <button class="nav-btn" data-tab="profile"><span class="nav-icon">👤</span><span>Profile</span></button>
     </div>
 </div>
-
 <div class="modal-overlay" id="giftModal"><div class="modal-content" id="modalContent"></div></div>
-<div class="admin-modal" id="adminModal">
-    <div class="admin-panel">
-        <div class="admin-tabs">
-            <div class="admin-tab active" data-admin-tab="gifts">Add gift</div>
-            <div class="admin-tab" data-admin-tab="users">Users & currency</div>
-        </div>
-        <div id="adminTabGifts" class="admin-tab-content active">
-            <input type="text" id="giftLink" class="admin-input" placeholder="Telegram gift link (t.me/gift/... or /nft/...)">
-            <button class="admin-btn" id="fetchGiftBtn" style="background:#2C2C3A; color:#00FF88;">🔍 Fetch from link</button>
-            <div id="fetchPreview" style="margin-top:10px; display:none;">
-                <img id="fetchedImage" class="preview-img">
-                <div style="font-size:12px; margin:4px 0;"><span id="fetchedName"></span> <span id="fetchedNumber" style="color:#aaa;"></span></div>
-            </div>
-            <div class="admin-row"><input type="text" id="adminName" class="admin-input" placeholder="Gift name"><input type="text" id="adminNumber" class="admin-input" placeholder="Number"></div>
-            <input type="text" id="adminImage" class="admin-input" placeholder="Image URL">
-            <div class="admin-row"><input type="number" id="adminPrice" class="admin-input" placeholder="Price"><select id="adminCurrency" class="admin-select"><option>RUB</option><option>TON</option><option>Stars</option></select></div>
-            <select id="adminBg" class="admin-input"></select>
-            <select id="adminSymbol" class="admin-input"></select>
-            <select id="adminModel" class="admin-input"><option>Classic</option><option>Rare</option><option>Epic</option><option>Legendary</option><option>Mythic</option></select>
-            <button class="admin-btn" id="addGiftBtn">➕ Add to Market</button>
-            <div id="imagePreview" style="margin-top:10px; text-align:center;"></div>
-        </div>
-        <div id="adminTabUsers" class="admin-tab-content">
-            <select id="adminUserSelect" class="admin-input"><option value="crypto_panda">crypto_panda (current)</option></select>
-            <div class="admin-row"><input type="number" id="adminGiveAmount" class="admin-input" placeholder="Amount"><select id="adminGiveCurrency" class="admin-select"><option>TON</option><option>RUB</option><option>Stars</option><option>Points</option></select></div>
-            <button class="admin-btn" id="giveCurrencyBtn">💰 Give currency</button>
-        </div>
-        <button class="admin-btn" style="background:#2C2C3A; color:white; margin-top:16px;" onclick="closeAdmin()">Close</button>
-    </div>
-</div>
+<div class="admin-modal" id="adminModal"><div class="admin-panel"><div class="admin-tabs"><div class="admin-tab active" data-admin-tab="gifts">Add gift</div><div class="admin-tab" data-admin-tab="users">Users & currency</div></div><div id="adminTabGifts" class="admin-tab-content active"><input type="text" id="giftLink" class="admin-input" placeholder="Telegram gift link"><button class="admin-btn" id="fetchGiftBtn">🔍 Fetch from link</button><div id="fetchPreview" style="display:none;"><img id="fetchedImage" class="preview-img"><div><span id="fetchedName"></span> <span id="fetchedNumber"></span></div></div><div class="admin-row"><input type="text" id="adminName" class="admin-input" placeholder="Gift name"><input type="text" id="adminNumber" class="admin-input" placeholder="Number"></div><input type="text" id="adminImage" class="admin-input" placeholder="Image URL"><div class="admin-row"><input type="number" id="adminPrice" class="admin-input" placeholder="Price"><select id="adminCurrency" class="admin-select"><option>RUB</option><option>TON</option><option>Stars</option></select></div><select id="adminBg" class="admin-input"></select><select id="adminSymbol" class="admin-input"></select><select id="adminModel" class="admin-input"><option>Classic</option><option>Rare</option><option>Epic</option><option>Legendary</option><option>Mythic</option></select><button class="admin-btn" id="addGiftBtn">➕ Add to Market</button></div><div id="adminTabUsers" class="admin-tab-content"><select id="adminUserSelect" class="admin-input"><option value="crypto_panda">crypto_panda (current)</option></select><div class="admin-row"><input type="number" id="adminGiveAmount" class="admin-input" placeholder="Amount"><select id="adminGiveCurrency" class="admin-select"><option>TON</option><option>RUB</option><option>Stars</option><option>Points</option></select></div><button class="admin-btn" id="giveCurrencyBtn">💰 Give currency</button></div><button class="admin-btn" style="background:#2C2C3A; color:white; margin-top:16px;" onclick="closeAdmin()">Close</button></div></div>
 <div class="toast" id="toastMsg"></div>
 
 <script>
-    // ======================== ПОЛНАЯ ЛОГИКА ========================
+    // ------------------------- ДАННЫЕ -------------------------
     const COLLECTIONS_LIST = ["Santa Hat","Christmas Tree","Snowman","Easter Egg","Pumpkin","Fireworks","Heart Balloon","Party Popper","Homemade Cake","Ice Cream","Kitty","Magic Wand","Rainbow","Pixel Heart","Dragon Egg","Unicorn Horn","Pepe","Doge","Shiba","Snoop Cigar","Mousse Cake","Vice Cream"];
     const ALL_BGS = ["Dark Abyss","Neon City","Crystal Cave","Lava Core","Frostbite","Cyberpunk","Dreamscape","Void","Grape","Turquoise","Indigo Dye","Electric Indigo","Mint Green","Hunter Green","Ivory White","Emerald","Jade Green","Satin Gold","Cappuccino","Midnight Blue","Shamrock Green","Malachite","Pine Green","Copper","Black","Roman Silver","Sky Blue","Mystic Pearl","Neon Blue","Battleship Grey","Coral Red","Caramel","English Violet","Rosewood","Lemongrass","Onyx Black","Orange","Dark Lilac","Cyberpunk","Pacific Cyan","Electric Purple","Desert Sand","Persimmon","Chocolate","Pistachio","Pure Gold","Platinum","Strawberry","Cobalt Blue","French Blue","Pacific Green","Amber","Light Olive","Carrot Juice","Silver Blue","Chestnut","Aquamarine","Khaki Green","Burgundy","Sapphire","Steel Grey","Navy Blue","Lavender","Purple","Azure Blue","Moonstone","Fandango","Raspberry","Gunmetal","Carmine","Marine Blue","Tomato","Old Gold","Mustard","French Violet","Rifle Green","Ranger Green","Feldgrau","Deep Cyan","Burnt Sienna","Celtic Blue","Mexican Pink","Gunship Green","Fire Engine","Dark Green","Tactical Pine","Seal Brown","Camo Green"];
     const ALL_SYMBOLS = ["Star","Moon","Diamond","Flame","Thunder","Skull","Heart","Crown","Lightning","Snowflake","Rose","Sword","Shield","Anchor","Key","Lock","Eye","Dragon","Phoenix","Wolf","Eagle","Lion","Tiger","Bear","Snake","Spider","Butterfly","Bee","Ant","Spiral","Triangle","Square","Circle","Cross","Infinity","Omega","Sigma","Delta"];
@@ -765,68 +256,53 @@
 
     async function saveToCloud() {
         try {
-            const data = { marketGifts, myGifts, balances };
             await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY },
-                body: JSON.stringify(data)
+                body: JSON.stringify({ marketGifts, myGifts, balances })
             });
-        } catch(e) { console.error('Save error', e); }
+        } catch(e) { console.error(e); }
     }
-
     async function loadFromCloud() {
         try {
-            const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+            const resp = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
                 headers: { 'X-Master-Key': JSONBIN_API_KEY }
             });
-            if (!response.ok) throw new Error('Load failed');
-            const data = await response.json();
+            if (!resp.ok) throw new Error();
+            const data = await resp.json();
             marketGifts = data.record.marketGifts || [];
             myGifts = data.record.myGifts || [];
-            balances = data.record.balances || { ton: 0, rub: 0, stars: 0, points: 0 };
-            updateUI();
-            renderFilters();
-            renderMarket();
-            renderMyGiftsList();
-            toast('Data loaded from cloud');
+            balances = data.record.balances || { ton:0, rub:0, stars:0, points:0 };
         } catch(e) {
-            console.error(e);
             marketGifts = [];
             myGifts = [];
-            balances = { ton: 0, rub: 0, stars: 0, points: 0 };
-            await saveToCloud();
-            updateUI();
-            renderFilters();
-            renderMarket();
-            renderMyGiftsList();
+            balances = { ton:0, rub:0, stars:0, points:0 };
         }
+        updateUI();
+        renderFilters();
+        renderMarket();
+        renderMyGiftsList();
     }
-
     function saveData() {
         localStorage.setItem("kupigifts_market", JSON.stringify(marketGifts));
         localStorage.setItem("kupigifts_my", JSON.stringify(myGifts));
         localStorage.setItem("kupigifts_bal", JSON.stringify(balances));
         saveToCloud();
     }
-
     function updateUI() {
         document.getElementById("pointsVal").innerText = balances.points;
         document.getElementById("tonVal").innerText = balances.ton;
-        document.getElementById("rubVal").innerText = balances.rub;
         document.getElementById("starsVal").innerText = balances.stars;
+        document.getElementById("rubVal").innerText = balances.rub;
         document.getElementById("profileRub").innerHTML = balances.rub + " ₽";
         document.getElementById("purchasedCount").innerText = myGifts.length;
         document.getElementById("soldCount").innerText = "0";
     }
-
-    function getCollections() { return COLLECTIONS_LIST; }
-
     function renderFilters() {
         const container = document.getElementById("collectionFilters");
         if (!container) return;
-        const collections = getCollections();
         container.innerHTML = `<div class="filter-pill ${currentFilterCol === 'all' ? 'active' : ''}" data-filter="all">📚 All</div>` +
-            collections.map(c => `<div class="filter-pill ${currentFilterCol === c ? 'active' : ''}" data-filter="${c}">${c}</div>`).join('');
+            COLLECTIONS_LIST.map(c => `<div class="filter-pill ${currentFilterCol === c ? 'active' : ''}" data-filter="${c}">${c}</div>`).join('');
         document.querySelectorAll("#collectionFilters .filter-pill").forEach(btn => {
             btn.addEventListener("click", () => {
                 currentFilterCol = btn.getAttribute("data-filter");
@@ -835,7 +311,6 @@
             });
         });
     }
-
     function renderMarket() {
         let filtered = marketGifts.filter(g => {
             if (currentFilterCol !== "all" && g.name !== currentFilterCol) return false;
@@ -846,10 +321,7 @@
         if (currentSort === "asc") filtered.sort((a,b) => a.price - b.price);
         else filtered.sort((a,b) => b.price - a.price);
         const grid = document.getElementById("marketGrid");
-        if (filtered.length === 0) {
-            grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🎁</div><h3>No gifts yet</h3><div>Add via admin panel</div></div>';
-            return;
-        }
+        if (filtered.length === 0) { grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🎁</div><h3>No gifts yet</h3><div>Add via admin panel</div></div>'; return; }
         grid.innerHTML = filtered.map(g => `
             <div class="gift-card" onclick='openGiftModal(${JSON.stringify(g).replace(/'/g, "&#39;")})'>
                 <div class="gift-img-wrap"><img class="gift-img" src="${g.img}" onerror="this.src='https://placehold.co/400x400/1a1a2e/3B82F6?text=?'"><div class="gift-rarity-dot ${g.model.toLowerCase()}"></div></div>
@@ -858,15 +330,11 @@
             </div>
         `).join('');
     }
-
     function renderMyGiftsList() {
         const container = document.getElementById("myGiftsList");
         if (!container) return;
         if (myGiftsTab === "gifts") {
-            if (myGifts.length === 0) {
-                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🎁</div><h3>No gifts yet</h3><div>Buy something or ask @ManagerKupiKod</div></div>';
-                return;
-            }
+            if (myGifts.length === 0) { container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🎁</div><h3>No gifts yet</h3></div>'; return; }
             container.innerHTML = `<div class="gifts-grid">` + myGifts.map(g => `
                 <div class="gift-card">
                     <div class="gift-img-wrap"><img class="gift-img" src="${g.img}" onerror="this.src='https://placehold.co/400x400/1a1a2e/3B82F6?text=?'"><div class="gift-rarity-dot ${g.model.toLowerCase()}"></div></div>
@@ -874,43 +342,37 @@
                     <div class="gift-price-row"><div class="gift-price">${g.price} ${g.currency}</div><div class="gift-cart-btn">👑</div></div>
                 </div>
             `).join('') + `</div>`;
-        } else if (myGiftsTab === "offers") {
-            container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📊</div><h3>No active offers</h3></div>';
-        } else {
-            container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📜</div><h3>History will appear here</h3></div>';
-        }
+        } else if (myGiftsTab === "offers") container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📊</div><h3>No active offers</h3></div>';
+        else container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📜</div><h3>History will appear here</h3></div>';
     }
-
     function openGiftModal(gift) {
         selectedGift = gift;
-        const modal = document.getElementById("modalContent");
-        modal.innerHTML = `
+        document.getElementById("modalContent").innerHTML = `
             <div class="modal-drag"></div>
             <img class="modal-img" src="${gift.img}" onerror="this.src='https://placehold.co/400x400/1a1a2e/3B82F6?text=?'">
             <div class="modal-gift-name">${escapeHtml(gift.name)}</div>
             <div class="modal-gift-num">${gift.number}</div>
             <div class="modal-traits">
-                <div class="modal-trait"><span class="modal-trait-key">Model</span><div class="modal-trait-right"><span class="modal-trait-val">${gift.model}</span><span class="modal-trait-rarity">0.5%</span></div></div>
-                <div class="modal-trait"><span class="modal-trait-key">Backdrop</span><div class="modal-trait-right"><span class="modal-trait-val">${gift.bg}</span><span class="modal-trait-rarity">1%</span></div></div>
-                <div class="modal-trait"><span class="modal-trait-key">Symbol</span><div class="modal-trait-right"><span class="modal-trait-val">${gift.symbol}</span><span class="modal-trait-rarity">0.3%</span></div></div>
+                <div class="modal-trait"><span class="modal-trait-key">Model</span><span class="modal-trait-val">${gift.model}</span></div>
+                <div class="modal-trait"><span class="modal-trait-key">Backdrop</span><span class="modal-trait-val">${gift.bg}</span></div>
+                <div class="modal-trait"><span class="modal-trait-key">Symbol</span><span class="modal-trait-val">${gift.symbol}</span></div>
             </div>
             <div class="modal-price"><strong>${gift.price} ${gift.currency}</strong></div>
-            <div class="modal-btn-row"><button class="modal-offer-btn">Make offer<span class="modal-offer-sub">0.01 ${gift.currency}</span></button><button class="modal-buy-btn" id="modalBuyBtn">Buy gift</button></div>
+            <div class="modal-btn-row"><button class="modal-offer-btn">Make offer</button><button class="modal-buy-btn" id="modalBuyBtn">Buy gift</button></div>
         `;
         document.getElementById("giftModal").classList.add("open");
         document.getElementById("modalBuyBtn").onclick = () => buyGift();
     }
-
     function buyGift() {
         if (!selectedGift) return;
         let cost = selectedGift.price;
-        let currency = selectedGift.currency;
-        if (currency === "RUB" && balances.rub < cost) { toast("Insufficient RUB"); return; }
-        if (currency === "TON" && balances.ton < cost) { toast("Insufficient TON"); return; }
-        if (currency === "Stars" && balances.stars < cost) { toast("Insufficient Stars"); return; }
-        if (currency === "RUB") balances.rub -= cost;
-        if (currency === "TON") balances.ton -= cost;
-        if (currency === "Stars") balances.stars -= cost;
+        let cur = selectedGift.currency;
+        if (cur === "RUB" && balances.rub < cost) { toast("Insufficient RUB"); return; }
+        if (cur === "TON" && balances.ton < cost) { toast("Insufficient TON"); return; }
+        if (cur === "Stars" && balances.stars < cost) { toast("Insufficient Stars"); return; }
+        if (cur === "RUB") balances.rub -= cost;
+        if (cur === "TON") balances.ton -= cost;
+        if (cur === "Stars") balances.stars -= cost;
         balances.points += Math.floor(cost * 0.5);
         myGifts.push({ ...selectedGift, id: Date.now() });
         saveData();
@@ -919,19 +381,11 @@
         closeGiftModal();
         toast(`Purchased ${selectedGift.name}`);
     }
-
     function closeGiftModal() { document.getElementById("giftModal").classList.remove("open"); }
-
     function escapeHtml(str) { return str.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+    function toast(msg) { const t = document.getElementById("toastMsg"); t.innerText = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2000); }
 
-    function toast(msg) {
-        const t = document.getElementById("toastMsg");
-        t.innerText = msg;
-        t.classList.add("show");
-        setTimeout(() => t.classList.remove("show"), 2000);
-    }
-
-    // Admin
+    // admin
     let tapCount = 0, tapTimer;
     document.getElementById("avatarTrigger").onclick = () => {
         tapCount++;
@@ -948,12 +402,9 @@
     };
     function closeAdmin() { document.getElementById("adminModal").classList.remove("open"); }
     function fillAdminSelects() {
-        const bgSel = document.getElementById("adminBg");
-        bgSel.innerHTML = ALL_BGS.map(b => `<option>${b}</option>`).join('');
-        const symSel = document.getElementById("adminSymbol");
-        symSel.innerHTML = ALL_SYMBOLS.map(s => `<option>${s}</option>`).join('');
+        document.getElementById("adminBg").innerHTML = ALL_BGS.map(b => `<option>${b}</option>`).join('');
+        document.getElementById("adminSymbol").innerHTML = ALL_SYMBOLS.map(s => `<option>${s}</option>`).join('');
     }
-
     document.getElementById("addGiftBtn").onclick = () => {
         const name = document.getElementById("adminName").value.trim();
         const number = document.getElementById("adminNumber").value.trim();
@@ -969,28 +420,29 @@
         saveData();
         renderFilters();
         renderMarket();
-        toast(`✅ ${name} added to market (visible to all)`);
-        document.getElementById("adminName").value = document.getElementById("adminNumber").value = document.getElementById("adminImage").value = document.getElementById("adminPrice").value = "";
+        toast(`✅ ${name} added`);
+        document.getElementById("adminName").value = "";
+        document.getElementById("adminNumber").value = "";
+        document.getElementById("adminImage").value = "";
+        document.getElementById("adminPrice").value = "";
         document.getElementById("fetchPreview").style.display = "none";
     };
-
     document.getElementById("giveCurrencyBtn").onclick = () => {
         const amount = parseFloat(document.getElementById("adminGiveAmount").value);
-        const currency = document.getElementById("adminGiveCurrency").value;
+        const cur = document.getElementById("adminGiveCurrency").value;
         if (isNaN(amount) || amount <= 0) { toast("Enter amount"); return; }
-        if (currency === "TON") balances.ton += amount;
-        else if (currency === "RUB") balances.rub += amount;
-        else if (currency === "Stars") balances.stars += amount;
-        else if (currency === "Points") balances.points += amount;
+        if (cur === "TON") balances.ton += amount;
+        else if (cur === "RUB") balances.rub += amount;
+        else if (cur === "Stars") balances.stars += amount;
+        else if (cur === "Points") balances.points += amount;
         saveData();
         updateUI();
-        toast(`Given ${amount} ${currency} to crypto_panda`);
+        toast(`Given ${amount} ${cur}`);
         document.getElementById("adminGiveAmount").value = "";
     };
-
     document.getElementById("fetchGiftBtn").onclick = async () => {
         const link = document.getElementById("giftLink").value.trim();
-        if (!link) { toast("Enter gift link"); return; }
+        if (!link) { toast("Enter link"); return; }
         toast("Fetching...");
         try {
             const resp = await fetch(`http://127.0.0.1:5001/api/search_gift`, {
@@ -1007,13 +459,10 @@
             if (data.name) document.getElementById("adminName").value = data.name;
             if (data.number) document.getElementById("adminNumber").value = data.number;
             if (data.photo_url) document.getElementById("adminImage").value = data.photo_url;
-            toast("Data loaded, fill price and others");
-        } catch(e) {
-            toast("Error: " + e.message + " (server not running?)");
-        }
+            toast("Data loaded, set price and others");
+        } catch(e) { toast("Error: " + e.message); }
     };
-
-    // Filters and tabs
+    // Filters
     document.getElementById("applyPriceFilter").onclick = () => {
         let min = parseFloat(document.getElementById("priceMin").value);
         let max = parseFloat(document.getElementById("priceMax").value);
@@ -1027,10 +476,10 @@
         priceMin = 0; priceMax = Infinity;
         renderMarket();
     };
-    document.getElementById("sortToggleBtn").onclick = () => {
-        currentSort = currentSort === "asc" ? "desc" : "asc";
-        renderMarket();
-    };
+    document.getElementById("sortAsc").onclick = () => { currentSort = "asc"; renderMarket(); };
+    document.getElementById("sortDesc").onclick = () => { currentSort = "desc"; renderMarket(); };
+    document.getElementById("sortToggleBtn").onclick = () => { currentSort = currentSort === "asc" ? "desc" : "asc"; renderMarket(); };
+    // Tab switching
     document.querySelectorAll(".nav-btn").forEach(btn => {
         btn.addEventListener("click", () => {
             const tab = btn.getAttribute("data-tab");
@@ -1051,17 +500,14 @@
         });
     });
     document.querySelectorAll(".action-btn").forEach(btn => {
-        btn.addEventListener("click", (e) => {
-            const action = btn.getAttribute("data-action");
-            if (action === "add") toast("✉️ Write to @ManagerKupiKod to add gift");
-            else if (action === "withdraw") toast("💸 Withdrawal: contact @ManagerKupiKod");
-            else if (action === "send") toast("🎁 Send feature coming soon");
-            else if (action === "sell") toast("🏷️ Sell feature coming soon");
+        btn.addEventListener("click", () => {
+            const a = btn.getAttribute("data-action");
+            if (a === "add") toast("✉️ Write to @ManagerKupiKod to add gift");
+            else if (a === "withdraw") toast("💸 Contact @ManagerKupiKod");
+            else toast("Feature coming soon");
         });
     });
-
-    // Payment details save
-    document.getElementById("savePaymentBtn").addEventListener("click", () => {
+    document.getElementById("savePaymentBtn").onclick = () => {
         const card = document.getElementById("cardNumber").value.trim();
         const stars = document.getElementById("starsAccount").value.trim();
         const ton = document.getElementById("tonkeeperAddr").value.trim();
@@ -1069,26 +515,27 @@
         if (stars) localStorage.setItem("kupigifts_stars", stars);
         if (ton) localStorage.setItem("kupigifts_tonkeeper", ton);
         toast("Payment details saved");
-    });
-    // Load saved payment details
-    (function loadPaymentDetails() {
-        const savedCard = localStorage.getItem("kupigifts_card");
-        const savedStars = localStorage.getItem("kupigifts_stars");
-        const savedTon = localStorage.getItem("kupigifts_tonkeeper");
-        if (savedCard) document.getElementById("cardNumber").value = savedCard;
-        if (savedStars) document.getElementById("starsAccount").value = savedStars;
-        if (savedTon) document.getElementById("tonkeeperAddr").value = savedTon;
+    };
+    (function loadPayments() {
+        document.getElementById("cardNumber").value = localStorage.getItem("kupigifts_card") || "";
+        document.getElementById("starsAccount").value = localStorage.getItem("kupigifts_stars") || "";
+        document.getElementById("tonkeeperAddr").value = localStorage.getItem("kupigifts_tonkeeper") || "";
     })();
 
     document.getElementById("giftModal").addEventListener("click", (e) => { if (e.target === document.getElementById("giftModal")) closeGiftModal(); });
     document.getElementById("adminModal").addEventListener("click", (e) => { if (e.target === document.getElementById("adminModal")) closeAdmin(); });
+    document.querySelectorAll(".admin-tab").forEach(tab => {
+        tab.addEventListener("click", () => {
+            const target = tab.getAttribute("data-admin-tab");
+            document.querySelectorAll(".admin-tab").forEach(t => t.classList.remove("active"));
+            tab.classList.add("active");
+            document.querySelectorAll(".admin-tab-content").forEach(c => c.classList.remove("active"));
+            document.getElementById(`adminTab${target === "gifts" ? "Gifts" : "Users"}`).classList.add("active");
+        });
+    });
 
     (async () => {
         await loadFromCloud();
-        renderFilters();
-        renderMarket();
-        renderMyGiftsList();
-        updateUI();
         setTimeout(() => {
             document.getElementById("preloader").classList.add("hide");
             document.getElementById("app").classList.add("show");

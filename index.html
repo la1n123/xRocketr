@@ -6,6 +6,7 @@
     <title>KupiGifts — Premium Marketplace</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
@@ -82,13 +83,13 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        #app { display: flex; flex-direction: column; height: 100vh; opacity: 0; transition: opacity 0.3s; }
+        #app { display: flex; flex-direction: column; min-height: 100vh; height: 100vh; opacity: 0; transition: opacity 0.3s; }
         #app.show { opacity: 1; }
 
         /* Top bar - glassmorphism */
         .top-bar {
             padding: 12px 16px;
-            padding-top: max(12px, constant(safe-area-inset-top, 12px), env(safe-area-inset-top, 12px));
+            padding-top: max(55px, constant(safe-area-inset-top, 55px), env(safe-area-inset-top, 55px));
             background: rgba(0,0,0,0.3);
             backdrop-filter: blur(var(--blur));
             -webkit-backdrop-filter: blur(var(--blur));
@@ -2339,39 +2340,31 @@
         }, { passive: true });
     })();
 
-    // Telegram safe area — поднимаем весь контент под безопасную зону
-    function applyTgSafeArea() {
-        const tg = window.Telegram?.WebApp;
-        if (!tg) return;
-        const app = document.getElementById('app');
-        if (!app) return;
-        const safeInset = window.innerHeight - (tg.viewportStableHeight || window.innerHeight);
-        if (safeInset > 0) {
-            app.style.paddingTop = (safeInset + 4) + 'px';
-        }
-    }
-    // Загружаем данные Telegram: ник + аватарка
-    function applyTgProfile() {
+    // Telegram — загружаем профиль
+    function loadTgProfile() {
         try {
             const tg = window.Telegram?.WebApp;
             if (!tg) return;
-            if (!tg.initDataUnsafe?.user) return;
-            const user = tg.initDataUnsafe.user;
-            const displayName = user.username || [user.first_name, user.last_name].filter(Boolean).join(' ') || 'User';
-            const nameEl = document.querySelector('.profile-name');
-            if (nameEl) nameEl.innerText = displayName;
-            const avatar = document.querySelector('.profile-avatar');
-            if (avatar) {
+            const user = tg.initDataUnsafe?.user;
+            // Ставим отступ сверху под шапку Telegram
+            const app = document.getElementById('app');
+            if (app) app.style.paddingTop = '55px';
+            if (!user) return;
+            const name = user.username || [user.first_name, user.last_name].filter(Boolean).join(' ') || 'User';
+            const nEl = document.querySelector('.profile-name');
+            if (nEl) nEl.textContent = name;
+            const aEl = document.querySelector('.profile-avatar');
+            if (aEl) {
                 if (user.photo_url) {
-                    avatar.style.backgroundImage = `url(${user.photo_url})`;
-                    avatar.style.backgroundSize = 'cover';
-                    avatar.innerHTML = '';
+                    aEl.style.backgroundImage = 'url(' + user.photo_url + ')';
+                    aEl.style.backgroundSize = 'cover';
+                    aEl.innerHTML = '';
                 } else {
                     const letter = (user.first_name || 'U')[0].toUpperCase();
-                    avatar.innerHTML = `<span style="font-size:34px;font-weight:700">${letter}</span>`;
+                    aEl.innerHTML = '<span style="font-size:34px;font-weight:700">' + letter + '</span>';
                 }
             }
-        } catch(e) { console.warn('TG profile:', e); }
+        } catch(e) {}
     }
 
     // Better image fallback
@@ -2388,17 +2381,17 @@
         setTimeout(() => t.classList.remove("show"), 2500);
     }
 
+    // Загружаем профиль Telegram сразу, потом ещё раз после данных
+    loadTgProfile();
+
     (async () => {
-        // Telegram WebApp init
         const tg = window.Telegram?.WebApp;
         if (tg) { tg.ready(); tg.expand(); tg.setHeaderColor && tg.setHeaderColor('#000000'); }
-        applyTgSafeArea();
-        if (tg) tg.onEvent('viewportChanged', applyTgSafeArea);
 
         await loadFromCloud();
 
-        // Применяем профиль Telegram после загрузки данных
-        applyTgProfile();
+        // Ещё раз пробуем загрузить профиль — вдруг DOM обновился
+        loadTgProfile();
 
         initBannerCarousel();
         renderMarket(); renderMyGiftsContent(); updateUI(); updatePaymentDisplay();

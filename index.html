@@ -377,6 +377,8 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
+            image-rendering: auto;
+            image-rendering: crisp-edges;
         }
         .gift-rarity {
             position: absolute;
@@ -1793,7 +1795,7 @@
         grid.innerHTML = filtered.map(g => `
             <div class="gift-card" onclick='openGiftModal(${JSON.stringify(g).replace(/'/g,"&#39;")})'>
                 <div class="gift-img-wrap">
-                    <img class="gift-img" src="${g.img}" onerror="this.src='https://placehold.co/200?text=?'" loading="lazy">
+                    <img class="gift-img" src="${g.img}" onerror="this.src='https://placehold.co/400/1a1a2e/ffffff?text=Gift&font=raleway';this.style.objectFit='contain';this.style.padding='20%'" loading="lazy">
                     <div class="gift-rarity ${rarityClass(g.model)}"></div>
                 </div>
                 <div class="gift-name">${escapeHtml(g.name)}</div>
@@ -1932,7 +1934,7 @@
         const currLabel = gift.currency === 'RUB' ? '₽' : gift.currency === 'Stars' ? '★' : 'TON';
         modal.innerHTML = `
             <div class="modal-drag"></div>
-            <img src="${gift.img}" class="modal-img" onerror="this.src='https://placehold.co/400?text=?'">
+            <img src="${gift.img}" class="modal-img" onerror="this.src='https://placehold.co/400/1a1a2e/ffffff?text=Gift&font=raleway';this.style.objectFit='contain';this.style.padding='20%'"
             <div class="modal-title">${escapeHtml(gift.name)}</div>
             <div class="modal-number">${gift.number}</div>
             <div class="modal-traits">
@@ -1994,7 +1996,7 @@
             container.innerHTML = `<div class="gifts-grid">` + myGifts.map(g => `
                 <div class="gift-card">
                     <div class="gift-img-wrap">
-                        <img class="gift-img" src="${g.img}" onerror="this.src='https://placehold.co/200?text=?'" loading="lazy">
+                        <img class="gift-img" src="${g.img}" onerror="this.src='https://placehold.co/400/1a1a2e/ffffff?text=Gift&font=raleway';this.style.objectFit='contain';this.style.padding='20%'" loading="lazy">
                         <div class="gift-rarity ${rarityClass(g.model)}"></div>
                     </div>
                     <div class="gift-name">${escapeHtml(g.name)}</div>
@@ -2284,6 +2286,70 @@
     document.getElementById("giftModal").addEventListener("click", (e) => {
         if (e.target === document.getElementById("giftModal")) closeGiftModal();
     });
+
+    // Swipe to close modal
+    (function() {
+        let startY = 0, currentY = 0, isDragging = false;
+        const modal = document.getElementById("giftModal");
+        const content = document.getElementById("modalContent");
+        modal.addEventListener("touchstart", (e) => {
+            if (e.target.closest('.modal-content')) {
+                startY = e.touches[0].clientY;
+                currentY = startY;
+                isDragging = true;
+            }
+        }, { passive: true });
+        modal.addEventListener("touchmove", (e) => {
+            if (!isDragging) return;
+            currentY = e.touches[0].clientY;
+            const diff = currentY - startY;
+            if (diff > 0) {
+                content.style.transform = `translateY(${diff}px)`;
+                content.style.transition = 'none';
+            }
+        }, { passive: true });
+        modal.addEventListener("touchend", () => {
+            if (!isDragging) return;
+            isDragging = false;
+            const diff = currentY - startY;
+            content.style.transition = 'transform 0.3s';
+            content.style.transform = '';
+            if (diff > 100) closeGiftModal();
+        }, { passive: true });
+    })();
+
+    // Telegram WebApp integration
+    (function() {
+        try {
+            const tg = window.Telegram?.WebApp;
+            if (tg) {
+                tg.ready();
+                tg.expand();
+                tg.enableClosingConfirmation && tg.enableClosingConfirmation();
+                const user = tg.initDataUnsafe?.user;
+                if (user) {
+                    const nameEl = document.querySelector('.profile-name');
+                    if (nameEl) nameEl.innerText = user.username || user.first_name || 'Telegram user';
+                    if (user.photo_url) {
+                        const avatar = document.querySelector('.profile-avatar');
+                        if (avatar) {
+                            avatar.style.backgroundImage = `url(${user.photo_url})`;
+                            avatar.style.backgroundSize = 'cover';
+                            avatar.innerHTML = '';
+                        }
+                    }
+                }
+            }
+        } catch(e) {}
+    })();
+
+    // Better image fallback
+    document.addEventListener('error', (e) => {
+        if (e.target.tagName === 'IMG' && !e.target.dataset.fallback) {
+            e.target.dataset.fallback = '1';
+            e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"%3E%3Crect fill="%231a1a2e" width="400" height="400"/%3E%3Ctext x="200" y="200" text-anchor="middle" dominant-baseline="central" fill="%23ffffff" font-size="40" font-family="sans-serif"%3EGift%3C/text%3E%3C/svg%3E';
+        }
+    }, true);
 
     function toast(msg) {
         const t = document.getElementById("toastMsg");

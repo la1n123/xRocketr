@@ -1705,8 +1705,12 @@
             const r = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
                 headers: { 'X-Master-Key': JSONBIN_API_KEY }
             });
-            const existing = r.ok ? (await r.json()).record : { marketGifts: [], users: {} };
-            existing.marketGifts = marketGifts;
+            if (!r.ok) throw new Error('GET failed');
+            const existing = (await r.json()).record || {};
+            // Не затираем серверные данные пустым массивом
+            if (marketGifts.length || !existing.marketGifts || !existing.marketGifts.length) {
+                existing.marketGifts = marketGifts;
+            }
             existing.users = existing.users || {};
             existing.users[userId] = { myGifts, balances, paymentMethods };
             await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
@@ -1729,6 +1733,11 @@
             myGifts = userData.myGifts || [];
             balances = userData.balances || { ton: 0, rub: 0, stars: 0, points: 0 };
             paymentMethods = userData.paymentMethods || { card: null, ton: null, stars: null };
+            // Кэшируем в localStorage
+            localStorage.setItem("kupigifts_market", JSON.stringify(marketGifts));
+            localStorage.setItem("kupigifts_my", JSON.stringify(myGifts));
+            localStorage.setItem("kupigifts_bal", JSON.stringify(balances));
+            localStorage.setItem("kupigifts_payment", JSON.stringify(paymentMethods));
             updateUI(); renderMarket(); renderMyGiftsContent(); updatePaymentDisplay();
         } catch(e) {
             marketGifts = [];

@@ -577,26 +577,17 @@
             margin-bottom: 16px;
         }
         .profile-header {
-            height: 80px;
+            height: 90px;
             position: relative;
-            overflow: hidden;
             background-size: cover;
             background-position: center;
         }
         .profile-header::before {
             content: '';
             position: absolute; inset: 0;
-            background: linear-gradient(135deg, rgba(10,132,255,0.55) 0%, rgba(191,90,242,0.55) 100%);
+            background: linear-gradient(135deg, rgba(10,132,255,0.5) 0%, rgba(191,90,242,0.5) 100%);
             background-size: 200% 200%;
             animation: gradientShift 4s ease infinite;
-            z-index: 1;
-        }
-        .profile-header::after {
-            content: '';
-            position: absolute; inset: 0;
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            z-index: 0;
         }
         @keyframes gradientShift {
             0% { background-position: 0% 50%; }
@@ -616,7 +607,7 @@
             align-items: center;
             justify-content: center;
             font-size: 32px;
-            margin-top: -40px;
+            margin-top: -55px;
             margin-bottom: 12px;
             cursor: pointer;
             transition: transform 0.2s;

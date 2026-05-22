@@ -785,6 +785,34 @@
             font-weight: 600;
         }
         .payment-status.not-linked { color: var(--text3); }
+        .payment-balance {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text);
+            white-space: nowrap;
+            margin-right: 8px;
+        }
+        .payment-balance.zero { color: var(--red); }
+        .payment-withdraw-btn {
+            background: var(--accent);
+            border: none;
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #fff;
+            cursor: pointer;
+            font-family: inherit;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        .payment-withdraw-btn:active { transform: scale(0.95); }
+        .payment-withdraw-btn.disabled {
+            background: rgba(255,255,255,0.1);
+            color: var(--text3);
+            cursor: not-allowed;
+            pointer-events: none;
+        }
 
         .invite-card {
             background: var(--glass-bg);
@@ -835,32 +863,41 @@
             bottom: 0;
             left: 0;
             right: 0;
-            background: rgba(0,0,0,0.8);
+            background: transparent;
             backdrop-filter: blur(var(--blur));
             -webkit-backdrop-filter: blur(var(--blur));
-            border-top: 0.5px solid var(--glass-border);
             display: flex;
-            padding: 10px 0 max(10px, constant(safe-area-inset-bottom, 10px), env(safe-area-inset-bottom, 10px));
+            justify-content: center;
+            gap: 12px;
+            padding: 10px 16px max(10px, constant(safe-area-inset-bottom, 10px), env(safe-area-inset-bottom, 10px));
             z-index: 100;
         }
         .nav-btn {
-            flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 4px;
-            background: none;
-            border: none;
+            background: rgba(255,255,255,0.06);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 0.5px solid var(--glass-border);
+            border-radius: 16px;
             color: var(--text2);
             font-size: 10px;
             font-weight: 600;
-            padding: 4px 0;
+            padding: 8px 20px;
             cursor: pointer;
-            transition: color 0.2s;
+            transition: all 0.25s;
             font-family: inherit;
+            min-width: 96px;
         }
-        .nav-btn.active { color: var(--accent); }
-        .nav-btn i { font-size: 24px; }
+        .nav-btn.active {
+            color: var(--accent);
+            background: rgba(10,132,255,0.12);
+            border-color: rgba(10,132,255,0.3);
+            box-shadow: 0 0 16px rgba(10,132,255,0.15);
+        }
+        .nav-btn i { font-size: 22px; }
 
         /* Gift modal */
         .modal-overlay {
@@ -1442,7 +1479,8 @@
                                 <div class="payment-label">Российская карта</div>
                                 <div class="payment-value" id="cardValue">Не привязана</div>
                             </div>
-                            <div class="payment-status not-linked" id="cardStatus">—</div>
+                            <div class="payment-balance" id="cardBal">0 ₽</div>
+                            <button class="payment-withdraw-btn" data-wd="card" id="cardWdBtn">Вывод</button>
                         </div>
                         <div class="payment-item">
                             <div class="payment-icon ton">
@@ -1452,7 +1490,8 @@
                                 <div class="payment-label">TON Keeper</div>
                                 <div class="payment-value" id="tonValue">Не привязан</div>
                             </div>
-                            <div class="payment-status not-linked" id="tonStatus">—</div>
+                            <div class="payment-balance" id="tonBal">0 TON</div>
+                            <button class="payment-withdraw-btn" data-wd="ton" id="tonWdBtn">Вывод</button>
                         </div>
                         <div class="payment-item">
                             <div class="payment-icon stars">
@@ -1462,7 +1501,8 @@
                                 <div class="payment-label">Telegram Stars</div>
                                 <div class="payment-value" id="starsValue">Не привязаны</div>
                             </div>
-                            <div class="payment-status not-linked" id="starsStatus">—</div>
+                            <div class="payment-balance" id="starsBal">0 ★</div>
+                            <button class="payment-withdraw-btn" data-wd="stars" id="starsWdBtn">Вывод</button>
                         </div>
                     </div>
                 </div>
@@ -1740,35 +1780,71 @@
         }
     }
 
+    function withdrawCurrency(type) {
+        let amount, label, currency;
+        if (type === 'card') { amount = balances.rub; label = 'RUB'; currency = '₽'; }
+        else if (type === 'ton') { amount = balances.ton; label = 'TON'; currency = ' TON'; }
+        else { amount = balances.stars; label = 'Stars'; currency = ' ★'; }
+
+        if (amount <= 0) { toast('❌ Нет денег на вывод'); return; }
+        if ((type === 'card' && !paymentMethods.card) || (type === 'ton' && !paymentMethods.ton) || (type === 'stars' && !paymentMethods.stars)) {
+            toast('Сначала привяжите способ оплаты'); return;
+        }
+
+        const sum = parseFloat(prompt('Сумма для вывода (' + label + '). Доступно: ' + amount.toFixed(2) + currency));
+        if (isNaN(sum) || sum <= 0) { toast('Некорректная сумма'); return; }
+        if (sum > amount) { toast('Недостаточно средств'); return; }
+
+        if (type === 'card') { balances.rub -= sum; }
+        else if (type === 'ton') { balances.ton -= sum; }
+        else { balances.stars -= sum; }
+
+        saveData(); updateUI(); updatePaymentDisplay();
+        toast('✅ Вывод ' + sum.toFixed(2) + currency + ' отправлен');
+    }
+
     function updatePaymentDisplay() {
+        const rubBal = balances.rub || 0;
+        const tonBal = balances.ton || 0;
+        const starsBal = balances.stars || 0;
+
+        const cardBalEl = document.getElementById('cardBal');
+        cardBalEl.innerText = rubBal.toFixed(2) + ' ₽';
+        cardBalEl.classList.toggle('zero', rubBal <= 0);
+
+        const tonBalEl = document.getElementById('tonBal');
+        tonBalEl.innerText = tonBal.toFixed(2) + ' TON';
+        tonBalEl.classList.toggle('zero', tonBal <= 0);
+
+        const starsBalEl = document.getElementById('starsBal');
+        starsBalEl.innerText = starsBal.toFixed(2) + ' ★';
+        starsBalEl.classList.toggle('zero', starsBal <= 0);
+
+        const cardWd = document.getElementById('cardWdBtn');
+        cardWd.classList.toggle('disabled', rubBal <= 0);
+
+        const tonWd = document.getElementById('tonWdBtn');
+        tonWd.classList.toggle('disabled', tonBal <= 0);
+
+        const starsWd = document.getElementById('starsWdBtn');
+        starsWd.classList.toggle('disabled', starsBal <= 0);
+
         if (paymentMethods.card) {
             document.getElementById('cardValue').innerText = '••• ' + paymentMethods.card.slice(-4);
-            document.getElementById('cardStatus').innerText = 'Активна';
-            document.getElementById('cardStatus').classList.remove('not-linked');
         } else {
             document.getElementById('cardValue').innerText = 'Не привязана';
-            document.getElementById('cardStatus').innerText = '—';
-            document.getElementById('cardStatus').classList.add('not-linked');
         }
 
         if (paymentMethods.ton) {
             document.getElementById('tonValue').innerText = paymentMethods.ton.slice(0, 6) + '...' + paymentMethods.ton.slice(-6);
-            document.getElementById('tonStatus').innerText = 'Активен';
-            document.getElementById('tonStatus').classList.remove('not-linked');
         } else {
             document.getElementById('tonValue').innerText = 'Не привязан';
-            document.getElementById('tonStatus').innerText = '—';
-            document.getElementById('tonStatus').classList.add('not-linked');
         }
 
         if (paymentMethods.stars) {
             document.getElementById('starsValue').innerText = 'Привязаны';
-            document.getElementById('starsStatus').innerText = 'Активны';
-            document.getElementById('starsStatus').classList.remove('not-linked');
         } else {
             document.getElementById('starsValue').innerText = 'Не привязаны';
-            document.getElementById('starsStatus').innerText = '—';
-            document.getElementById('starsStatus').classList.add('not-linked');
         }
     }
 
@@ -2192,6 +2268,11 @@
     document.getElementById("paymentModal").addEventListener("click", (e) => {
         if (e.target === document.getElementById("paymentModal")) closePaymentModal();
     });
+
+    // Withdraw buttons
+    document.getElementById('cardWdBtn').onclick = () => withdrawCurrency('card');
+    document.getElementById('tonWdBtn').onclick = () => withdrawCurrency('ton');
+    document.getElementById('starsWdBtn').onclick = () => withdrawCurrency('stars');
 
     // Nav
     document.querySelectorAll(".nav-btn[data-tab]").forEach(btn => {

@@ -89,7 +89,7 @@
         /* Top bar - glassmorphism */
         .top-bar {
             padding: 12px 16px;
-            padding-top: max(55px, constant(safe-area-inset-top, 55px), env(safe-area-inset-top, 55px));
+            padding-top: 8px;
             background: rgba(0,0,0,0.3);
             backdrop-filter: blur(var(--blur));
             -webkit-backdrop-filter: blur(var(--blur));
@@ -577,9 +577,16 @@
             margin-bottom: 16px;
         }
         .profile-header {
-            height: 100px;
+            height: 60px;
             background: linear-gradient(135deg, var(--accent) 0%, var(--purple) 100%);
+            background-size: 200% 200%;
+            animation: gradientShift 4s ease infinite;
             position: relative;
+        }
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
         .profile-body {
             padding: 0 20px 20px;
@@ -594,7 +601,7 @@
             align-items: center;
             justify-content: center;
             font-size: 32px;
-            margin-top: -35px;
+            margin-top: -20px;
             margin-bottom: 12px;
             cursor: pointer;
             transition: transform 0.2s;
@@ -1462,10 +1469,6 @@
 
     <!-- BOTTOM NAV -->
     <div class="bottom-nav">
-        <button class="nav-btn" data-tab="games">
-            <i class="ti ti-device-gamepad-2"></i>
-            <span>Games</span>
-        </button>
         <button class="nav-btn active" data-tab="market">
             <i class="ti ti-shopping-bag"></i>
             <span>Store</span>
@@ -2341,14 +2344,42 @@
     })();
 
     // Telegram — загружаем профиль
+    function extractColorsAndSetBanner(imgUrl) {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 100; canvas.height = 100;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, 100, 100);
+            const d = ctx.getImageData(0, 0, 100, 100).data;
+            const map = {};
+            for (let i = 0; i < d.length; i += 16) {
+                const r = Math.floor(d[i] / 32) * 32 + 16;
+                const g = Math.floor(d[i+1] / 32) * 32 + 16;
+                const b = Math.floor(d[i+2] / 32) * 32 + 16;
+                const key = r + ',' + g + ',' + b;
+                map[key] = (map[key] || 0) + 1;
+            }
+            const sorted = Object.entries(map).sort((a,b) => b[1] - a[1]);
+            const colors = sorted.slice(0, 3).map(([key]) => 'rgb(' + key + ')');
+            if (colors.length >= 2) {
+                const h = document.querySelector('.profile-header');
+                if (h) {
+                    h.style.background = 'linear-gradient(135deg, ' + colors[0] + ' 0%, ' + colors[1] + ' 100%)';
+                    h.style.backgroundSize = '200% 200%';
+                    h.style.animation = 'gradientShift 4s ease infinite';
+                }
+            }
+        };
+        img.src = imgUrl;
+    }
+
     function loadTgProfile() {
         try {
             const tg = window.Telegram?.WebApp;
             if (!tg) return;
             const user = tg.initDataUnsafe?.user;
-            // Ставим отступ сверху под шапку Telegram
-            const app = document.getElementById('app');
-            if (app) app.style.paddingTop = '55px';
             if (!user) return;
             const name = user.username || [user.first_name, user.last_name].filter(Boolean).join(' ') || 'User';
             const nEl = document.querySelector('.profile-name');
@@ -2359,6 +2390,7 @@
                     aEl.style.backgroundImage = 'url(' + user.photo_url + ')';
                     aEl.style.backgroundSize = 'cover';
                     aEl.innerHTML = '';
+                    extractColorsAndSetBanner(user.photo_url);
                 } else {
                     const letter = (user.first_name || 'U')[0].toUpperCase();
                     aEl.innerHTML = '<span style="font-size:34px;font-weight:700">' + letter + '</span>';

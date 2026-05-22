@@ -573,14 +573,16 @@
             -webkit-backdrop-filter: blur(var(--blur));
             border: 0.5px solid var(--glass-border);
             border-radius: var(--radius-xl);
-            overflow: hidden;
             margin-bottom: 16px;
+            position: relative;
         }
         .profile-header {
             height: 90px;
             position: relative;
             background-size: cover;
             background-position: center;
+            border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+            overflow: hidden;
         }
         .profile-header::before {
             content: '';
@@ -595,9 +597,13 @@
             100% { background-position: 0% 50%; }
         }
         .profile-body {
-            padding: 0 20px 20px;
+            padding: 55px 20px 20px;
+            position: relative;
         }
         .profile-avatar {
+            position: absolute;
+            top: -35px;
+            left: 20px;
             width: 70px;
             height: 70px;
             border-radius: 50%;
@@ -607,11 +613,10 @@
             align-items: center;
             justify-content: center;
             font-size: 32px;
-            margin-top: -55px;
-            margin-bottom: 12px;
             cursor: pointer;
             transition: transform 0.2s;
             box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            z-index: 2;
         }
         .profile-avatar:active { transform: scale(0.95); }
         .profile-name {

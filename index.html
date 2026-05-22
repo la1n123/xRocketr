@@ -577,11 +577,26 @@
             margin-bottom: 16px;
         }
         .profile-header {
-            height: 60px;
-            background: linear-gradient(135deg, var(--accent) 0%, var(--purple) 100%);
+            height: 80px;
+            position: relative;
+            overflow: hidden;
+            background-size: cover;
+            background-position: center;
+        }
+        .profile-header::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: linear-gradient(135deg, rgba(10,132,255,0.55) 0%, rgba(191,90,242,0.55) 100%);
             background-size: 200% 200%;
             animation: gradientShift 4s ease infinite;
-            position: relative;
+            z-index: 1;
+        }
+        .profile-header::after {
+            content: '';
+            position: absolute; inset: 0;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 0;
         }
         @keyframes gradientShift {
             0% { background-position: 0% 50%; }
@@ -601,7 +616,7 @@
             align-items: center;
             justify-content: center;
             font-size: 32px;
-            margin-top: -20px;
+            margin-top: -40px;
             margin-bottom: 12px;
             cursor: pointer;
             transition: transform 0.2s;
@@ -2344,37 +2359,6 @@
     })();
 
     // Telegram — загружаем профиль
-    function extractColorsAndSetBanner(imgUrl) {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = function() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 100; canvas.height = 100;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, 100, 100);
-            const d = ctx.getImageData(0, 0, 100, 100).data;
-            const map = {};
-            for (let i = 0; i < d.length; i += 16) {
-                const r = Math.floor(d[i] / 32) * 32 + 16;
-                const g = Math.floor(d[i+1] / 32) * 32 + 16;
-                const b = Math.floor(d[i+2] / 32) * 32 + 16;
-                const key = r + ',' + g + ',' + b;
-                map[key] = (map[key] || 0) + 1;
-            }
-            const sorted = Object.entries(map).sort((a,b) => b[1] - a[1]);
-            const colors = sorted.slice(0, 3).map(([key]) => 'rgb(' + key + ')');
-            if (colors.length >= 2) {
-                const h = document.querySelector('.profile-header');
-                if (h) {
-                    h.style.background = 'linear-gradient(135deg, ' + colors[0] + ' 0%, ' + colors[1] + ' 100%)';
-                    h.style.backgroundSize = '200% 200%';
-                    h.style.animation = 'gradientShift 4s ease infinite';
-                }
-            }
-        };
-        img.src = imgUrl;
-    }
-
     function loadTgProfile() {
         try {
             const tg = window.Telegram?.WebApp;
@@ -2385,12 +2369,13 @@
             const nEl = document.querySelector('.profile-name');
             if (nEl) nEl.textContent = name;
             const aEl = document.querySelector('.profile-avatar');
+            const hEl = document.querySelector('.profile-header');
             if (aEl) {
                 if (user.photo_url) {
                     aEl.style.backgroundImage = 'url(' + user.photo_url + ')';
                     aEl.style.backgroundSize = 'cover';
                     aEl.innerHTML = '';
-                    extractColorsAndSetBanner(user.photo_url);
+                    if (hEl) hEl.style.backgroundImage = 'url(' + user.photo_url + ')';
                 } else {
                     const letter = (user.first_name || 'U')[0].toUpperCase();
                     aEl.innerHTML = '<span style="font-size:34px;font-weight:700">' + letter + '</span>';

@@ -349,8 +349,8 @@
         .gifts-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            padding: 0 16px;
+            gap: 8px;
+            padding: 0 12px;
         }
 
         .gift-card {
@@ -1904,7 +1904,7 @@
                 <div class="gift-number">${g.number}</div>
                 <div class="gift-price">
                     <i class="ti ti-diamond"></i>
-                    ${g.price} ${g.currency === 'RUB' ? '₽' : g.currency === 'Stars' ? '★' : g.currency}
+                    ${g.price}${g.currency === 'RUB' ? '₽' : g.currency === 'Stars' ? '★' : 'т'}
                 </div>
             </div>
         `).join('');
@@ -2037,7 +2037,7 @@
         contentEl.style.transition = '';
         contentEl.style.opacity = '';
         selectedGift = gift;
-        const currLabel = gift.currency === 'RUB' ? '₽' : gift.currency === 'Stars' ? '★' : 'TON';
+        const currLabel = gift.currency === 'RUB' ? '₽' : gift.currency === 'Stars' ? '★' : 'т';
         contentEl.innerHTML = `
             <div class="modal-drag"></div>
             <img src="${gift.img}" class="modal-img" onerror="this.src='https://placehold.co/400/1a1a2e/ffffff?text=Gift&font=raleway';this.style.objectFit='contain';this.style.padding='20%'">
@@ -2116,7 +2116,7 @@
                     <div class="gift-number">${g.number}</div>
                     <div class="gift-price">
                         <i class="ti ti-diamond"></i>
-                        ${g.price} ${g.currency === 'RUB' ? '₽' : g.currency === 'Stars' ? '★' : g.currency}
+                        ${g.price}${g.currency === 'RUB' ? '₽' : g.currency === 'Stars' ? '★' : 'т'}
                     </div>
                 </div>
             `).join('') + `</div>`;

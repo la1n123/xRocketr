@@ -1754,6 +1754,8 @@
                 <div style="clear:both;"></div>
                 <button class="admin-btn" id="confirmGiveGiftBtn" style="background:#BF5AF2;margin-top:8px;">✅ Confirm Add to User</button>
             </div>
+            <div style="height:12px;"></div>
+            <button class="admin-btn" id="forceSyncBtn" style="background:#FF9F0A;">☁️ Force Sync to Cloud</button>
         </div>
         <button class="admin-btn" style="background:#2C2C3A; color:white; margin-top:16px;" onclick="closeAdmin()">Закрыть</button>
     </div>
@@ -1834,30 +1836,43 @@
     // Cloud sync — marketGifts общие, остальное per-user
     async function saveToCloud() {
         try {
-            const r = await fetch("https://api.jsonbin.io/v3/b/" + JSONBIN_BIN_ID + "/latest", {
+            var r = await fetch("https://api.jsonbin.io/v3/b/" + JSONBIN_BIN_ID + "/latest", {
                 headers: { 'X-Master-Key': JSONBIN_API_KEY }
             });
-            if (!r.ok) throw new Error('GET failed');
-            const existing = (await r.json()).record || {};
-            // Сливаем marketGifts: сохраняем все подарки со всех устройств (по id)
+            if (!r.ok) throw new Error('GET failed: ' + r.status);
+            var existing = (await r.json()).record || {};
+            // Сливаем marketGifts: добавляем локальные, которых нет в облаке
             var cloudGifts = existing.marketGifts || [];
-            // Добавляем локальные подарки, которых нет в облаке
+            var changed = false;
             for (var j = 0; j < marketGifts.length; j++) {
                 var found = false;
                 for (var k = 0; k < cloudGifts.length; k++) {
                     if (cloudGifts[k].id === marketGifts[j].id) { found = true; break; }
                 }
-                if (!found) cloudGifts.push(marketGifts[j]);
+                if (!found) { cloudGifts.push(marketGifts[j]); changed = true; }
+            }
+            // Если ничего не изменилось — не дёргаем API
+            if (!changed && existing.users && existing.users[userId]) {
+                var u = existing.users[userId];
+                if (JSON.stringify(u.myGifts) === JSON.stringify(myGifts) &&
+                    JSON.stringify(u.balances) === JSON.stringify(balances)) {
+                    return true; // ничего не поменялось, не пишем
+                }
             }
             existing.marketGifts = cloudGifts;
-            existing.users = existing.users || {};
+            if (!existing.users) existing.users = {};
             existing.users[userId] = { myGifts: myGifts, balances: balances, paymentMethods: paymentMethods, trust: window._userTrust || { verified: false, topTrader: false, trustLevel: 0, rating: 0 } };
-            await fetch("https://api.jsonbin.io/v3/b/" + JSONBIN_BIN_ID, {
+            var put = await fetch("https://api.jsonbin.io/v3/b/" + JSONBIN_BIN_ID, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY },
                 body: JSON.stringify(existing)
             });
-        } catch(e) { console.error(e); }
+            if (!put.ok) throw new Error('PUT failed: ' + put.status);
+            return true;
+        } catch(e) {
+            console.error('saveToCloud error:', e);
+            return false;
+        }
     }
 
     async function loadFromCloud() {
@@ -1903,7 +1918,10 @@
         localStorage.setItem("kupigifts_bal", JSON.stringify(balances));
         localStorage.setItem("kupigifts_payment", JSON.stringify(paymentMethods));
         if (window._userTrust) localStorage.setItem("kupigifts_trust", JSON.stringify(window._userTrust));
-        saveToCloud();
+        // Сохраняем в облако (с ожиданием)
+        saveToCloud().then(function(success) {
+            if (!success) toast("⚠️ Cloud save failed, data only in local cache");
+        });
     }
 
     function updateUI() {
@@ -2786,6 +2804,16 @@
         } catch(e) { toast('Ошибка: ' + e.message); }
     };
 
+    document.getElementById('forceSyncBtn').onclick = async function() {
+        toast('☁️ Syncing to cloud...');
+        var ok = await saveToCloud();
+        if (ok) {
+            toast('✅ Cloud synced! (' + marketGifts.length + ' gifts in market)');
+        } else {
+            toast('❌ Sync failed. Check console.');
+        }
+    };
+
     // Admin — загрузка пользователей по username и управление Trust
     let _adminUsersCache = [];
 
@@ -3306,7 +3334,7 @@
 
         initTrustFeatures();
 
-        // Периодическая синхронизация маркета (каждые 15с, чтобы быстрее видеть чужие подарки)
+        // Периодическая синхронизация маркета (каждые 2 минуты, чтобы не сжечь лимит JSONBin)
         setInterval(function() {
             fetch("https://api.jsonbin.io/v3/b/" + JSONBIN_BIN_ID + "/latest", {
                 headers: { 'X-Master-Key': JSONBIN_API_KEY }

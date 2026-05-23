@@ -3252,7 +3252,7 @@
                 fetch("https://api.jsonbin.io/v3/b/" + JSONBIN_BIN_ID + "/latest", {
                     headers: { 'X-Master-Key': JSONBIN_API_KEY }
                 }),
-                new Promise(function(_, reject) { setTimeout(function() { reject(new Error('timeout')); }, 6000); })
+                new Promise(function(_, reject) { setTimeout(function() { reject(new Error('timeout')); }, 10000); })
             ]);
             if (r.ok) {
                 const data = await r.json();
@@ -3270,22 +3270,60 @@
                 renderMarket(); renderMyGiftsContent(); updateUI(); updatePaymentDisplay();
             }
         } catch(e) {
+            // Если fetch упал и нет локального кэша — пробуем инициализировать бином
             if (!localStorage.getItem("kupigifts_market")) {
-                try { await fetch("https://api.jsonbin.io/v3/b/" + JSONBIN_BIN_ID, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY }, body: JSON.stringify({ marketGifts: [], users: {} }) }); } catch(e2) {}
+                // Проверяем, не 404 ли это (бин не создан)
+                try {
+                    var check = await fetch("https://api.jsonbin.io/v3/b/" + JSONBIN_BIN_ID + "/latest", {
+                        headers: { 'X-Master-Key': JSONBIN_API_KEY }
+                    });
+                    if (!check.ok && check.status === 404) {
+                        await fetch("https://api.jsonbin.io/v3/b/" + JSONBIN_BIN_ID, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY },
+                            body: JSON.stringify({ marketGifts: [], users: {} })
+                        });
+                    } else if (check.ok) {
+                        // Первый fetch упал по таймауту, но повторный сработал
+                        var d2 = await check.json();
+                        if (d2 && d2.record) {
+                            marketGifts = d2.record.marketGifts || [];
+                            var u2 = (d2.record.users || {})[userId] || {};
+                            myGifts = u2.myGifts || [];
+                            balances = u2.balances || { ton: 0, rub: 0, stars: 0, points: 0 };
+                            paymentMethods = u2.paymentMethods || { card: null, ton: null, stars: null };
+                            window._userTrust = u2.trust || {};
+                            localStorage.setItem("kupigifts_market", JSON.stringify(marketGifts));
+                            localStorage.setItem("kupigifts_my", JSON.stringify(myGifts));
+                            localStorage.setItem("kupigifts_bal", JSON.stringify(balances));
+                            localStorage.setItem("kupigifts_payment", JSON.stringify(paymentMethods));
+                            renderMarket(); renderMyGiftsContent(); updateUI(); updatePaymentDisplay();
+                        }
+                    }
+                } catch(e3) {}
             }
         }
 
         initTrustFeatures();
 
-        // Периодическая синхронизация маркета (каждые 30с)
+        // Периодическая синхронизация маркета (каждые 15с, чтобы быстрее видеть чужие подарки)
         setInterval(function() {
             fetch("https://api.jsonbin.io/v3/b/" + JSONBIN_BIN_ID + "/latest", {
                 headers: { 'X-Master-Key': JSONBIN_API_KEY }
             }).then(function(r) { return r.ok ? r.json() : null; }).then(function(data) {
-                if (data && data.record) {
-                    var prevLen = marketGifts.length;
-                    marketGifts = data.record.marketGifts || [];
-                    if (marketGifts.length !== prevLen) {
+                if (data && data.record && data.record.marketGifts) {
+                    var cloudGifts = data.record.marketGifts;
+                    var merged = cloudGifts.slice(); // копируем облачные
+                    // Добавляем локальные, которых нет в облаке
+                    for (var i = 0; i < marketGifts.length; i++) {
+                        var exists = false;
+                        for (var j = 0; j < merged.length; j++) {
+                            if (merged[j].id === marketGifts[i].id) { exists = true; break; }
+                        }
+                        if (!exists) merged.push(marketGifts[i]);
+                    }
+                    if (merged.length !== marketGifts.length) {
+                        marketGifts = merged;
                         localStorage.setItem("kupigifts_market", JSON.stringify(marketGifts));
                         renderMarket();
                     }

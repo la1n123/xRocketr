@@ -1261,11 +1261,69 @@
             box-shadow: 0 8px 32px rgba(0,0,0,0.6);
         }
         .toast.show { opacity: 1; }
+
+        /* ===== TRUST / SOCIAL PROOF ===== */
+        .online-counter {
+            position: fixed; top: 52px; left: 50%; transform: translateX(-50%);
+            z-index: 99; pointer-events: none;
+            font-size: 11px; font-weight: 600; color: var(--green);
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(10px);
+            padding: 3px 12px; border-radius: 20px; border: 0.5px solid rgba(48,209,88,0.3);
+            white-space: nowrap; opacity: 0; transition: opacity 0.5s;
+        }
+        .online-counter.show { opacity: 1; }
+        .online-dot { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--green); margin-right: 5px; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        .notif-toast {
+            position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+            z-index: 90; pointer-events: none;
+            background: rgba(10,10,15,0.95); backdrop-filter: blur(24px);
+            border: 0.5px solid rgba(255,255,255,0.08); border-radius: 16px;
+            padding: 12px 18px; font-size: 13px; color: var(--text2);
+            white-space: nowrap; opacity: 0; transition: all 0.5s cubic-bezier(0.4,0,0.2,1);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+            display: flex; align-items: center; gap: 10px;
+            max-width: 90vw;
+        }
+        .notif-toast.show { opacity: 1; bottom: 100px; }
+        .notif-toast strong { font-weight: 700; }
+
+        .trust-badge {
+            display: inline-flex; align-items: center; gap: 3px;
+            background: rgba(48,209,88,0.15); border: 0.5px solid rgba(48,209,88,0.3);
+            border-radius: 6px; padding: 2px 6px; font-size: 10px; font-weight: 700; color: var(--green);
+        }
+        .trust-badge i { font-size: 10px; }
+
+        .security-strip {
+            display: flex; align-items: center; justify-content: center; gap: 16px;
+            padding: 8px 12px; margin: 8px 16px 0;
+            background: rgba(255,255,255,0.02); border-radius: 12px;
+            border: 0.5px solid var(--glass-border);
+            font-size: 10px; color: var(--text3);
+        }
+        .security-strip i { font-size: 12px; }
+        .security-strip span { display: flex; align-items: center; gap: 4px; }
+
+        .achievement-badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            background: linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,165,0,0.1));
+            border: 0.5px solid rgba(255,215,0,0.3); border-radius: 20px;
+            padding: 4px 10px; font-size: 11px; font-weight: 700; color: var(--gold);
+        }
+        .achievement-badge i { font-size: 12px; }
     </style>
 </head>
 <body>
 
 <div id="preloader"><div class="loader"></div></div>
+
+<!-- Online counter -->
+<div class="online-counter" id="onlineCounter"><span class="online-dot"></span> <span id="onlineCount">0</span> people here</div>
+
+<!-- Notification toast -->
+<div class="notif-toast" id="notifToast"></div>
 
 <div id="app">
     <!-- TOP BAR -->
@@ -1366,6 +1424,14 @@
                 </div>
             </div>
 
+            <!-- Security strip -->
+            <div class="security-strip">
+                <span><i class="ti ti-shield-check" style="color:var(--green)"></i> Safe Deal</span>
+                <span><i class="ti ti-users" style="color:var(--accent)"></i> <span id="totalUsersStat">0</span> users</span>
+                <span><i class="ti ti-gift" style="color:var(--purple)"></i> <span id="totalSoldStat">0</span> sold</span>
+                <span><i class="ti ti-clock" style="color:var(--gold)"></i> 24/7 Support</span>
+            </div>
+
             <!-- Grid -->
             <div class="gifts-grid" id="marketGrid"></div>
         </div>
@@ -1436,8 +1502,11 @@
                         <div class="profile-avatar" id="avatarTrigger">
                             <i class="ti ti-user"></i>
                         </div>
-                        <div class="profile-name">crypto_panda</div>
-                        <div class="profile-rating">⭐ 4.92</div>
+                        <div class="profile-name" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                            <span id="profileNameDisplay">crypto_panda</span>
+                            <span id="verifiedBadge" class="trust-badge" style="display:none;"><i class="ti ti-circle-check"></i> Verified</span>
+                        </div>
+                        <div class="profile-rating">⭐ <span id="profileRatingDisplay">0.00</span></div>
                         <div class="profile-balance" id="profileRub">0 ₽</div>
                         <div class="profile-stats">
                             <div class="profile-stat">
@@ -1449,6 +1518,7 @@
                                 <div class="profile-stat-label">Sold</div>
                             </div>
                         </div>
+                        <div id="achievementBadges" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;"></div>
                         <div class="profile-stats-4">
                             <div class="profile-stat-sm">
                                 <div class="profile-stat-val-sm" id="statPoints">0</div>
@@ -1635,12 +1705,39 @@
             <button class="admin-btn" id="batchImportBtn">🚀 Импортировать все</button>
         </div>
         <div id="adminTabUsers" class="admin-tab-content">
-            <select id="adminUserSelect" class="admin-input"><option value="crypto_panda">crypto_panda</option></select>
+            <select id="adminUserSelect" class="admin-input"></select>
+            <div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:8px;">🎖️ Trust Settings</div>
+            <div class="admin-row">
+                <label style="flex:1;display:flex;align-items:center;gap:8px;padding:8px;background:rgba(255,255,255,0.03);border-radius:10px;cursor:pointer;font-size:13px;">
+                    <input type="checkbox" id="adminVerified"> Verified
+                </label>
+                <label style="flex:1;display:flex;align-items:center;gap:8px;padding:8px;background:rgba(255,255,255,0.03);border-radius:10px;cursor:pointer;font-size:13px;">
+                    <input type="checkbox" id="adminTopTrader"> Top Trader
+                </label>
+            </div>
+            <div class="admin-row">
+                <input type="number" id="adminTrustLevel" class="admin-input" placeholder="Trust Level (0-10)" min="0" max="10" value="0">
+                <input type="number" id="adminRating" class="admin-input" placeholder="Rating (0-5)" min="0" max="5" step="0.1" value="0">
+            </div>
+            <button class="admin-btn" id="saveTrustBtn" style="background:#0A84FF;">💾 Save Trust Settings</button>
+            <div style="height:12px;"></div>
+            <div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:8px;">💰 Currency</div>
             <div class="admin-row">
                 <input type="number" id="adminGiveAmount" class="admin-input" placeholder="Сумма">
                 <select id="adminGiveCurrency" class="admin-select"><option>TON</option><option>RUB</option><option>Stars</option><option>Баллы</option></select>
             </div>
             <button class="admin-btn" id="giveCurrencyBtn">💰 Выдать валюту</button>
+            <div style="height:12px;"></div>
+            <div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:8px;">🎁 Add Gift to User via Link</div>
+            <input type="text" id="adminGiveGiftLink" class="admin-input" placeholder="Telegram gift link">
+            <button class="admin-btn" id="fetchGiveGiftBtn" style="background:#2C2C3A; color:#00FF88;">🔍 Fetch & Add to User</button>
+            <div id="giveGiftPreview" style="display:none;margin-top:8px;padding:10px;background:rgba(255,255,255,0.03);border-radius:12px;">
+                <img id="giveGiftPreviewImg" style="width:60px;height:60px;border-radius:10px;object-fit:cover;float:left;margin-right:10px;">
+                <div style="font-size:14px;font-weight:700;color:#fff;" id="giveGiftPreviewName"></div>
+                <div style="font-size:12px;color:var(--text2);" id="giveGiftPreviewNum"></div>
+                <div style="clear:both;"></div>
+                <button class="admin-btn" id="confirmGiveGiftBtn" style="background:#BF5AF2;margin-top:8px;">✅ Confirm Add to User</button>
+            </div>
         </div>
         <button class="admin-btn" style="background:#2C2C3A; color:white; margin-top:16px;" onclick="closeAdmin()">Закрыть</button>
     </div>
@@ -1728,7 +1825,7 @@
                 existing.marketGifts = marketGifts;
             }
             existing.users = existing.users || {};
-            existing.users[userId] = { myGifts, balances, paymentMethods };
+            existing.users[userId] = { myGifts, balances, paymentMethods, trust: window._userTrust || { verified: false, topTrader: false, trustLevel: 0, rating: 0 } };
             await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY },
@@ -1749,6 +1846,7 @@
             myGifts = userData.myGifts || [];
             balances = userData.balances || { ton: 0, rub: 0, stars: 0, points: 0 };
             paymentMethods = userData.paymentMethods || { card: null, ton: null, stars: null };
+            window._userTrust = userData.trust || { verified: false, topTrader: false, trustLevel: 0, rating: 0 };
             // Кэшируем в localStorage
             localStorage.setItem("kupigifts_market", JSON.stringify(marketGifts));
             localStorage.setItem("kupigifts_my", JSON.stringify(myGifts));
@@ -1765,15 +1863,20 @@
             balances = ubal ? JSON.parse(ubal) : { ton: 0, rub: 0, stars: 0, points: 0, totalSpentRub: 0, totalSpentTon: 0, totalSpentStars: 0 };
             const upay = localStorage.getItem("kupigifts_payment");
             paymentMethods = upay ? JSON.parse(upay) : { card: null, ton: null, stars: null };
+            const ut = localStorage.getItem("kupigifts_trust");
+            window._userTrust = ut ? JSON.parse(ut) : { verified: false, topTrader: false, trustLevel: 0, rating: 0 };
             await saveToCloud(); updateUI(); renderMarket(); renderMyGiftsContent(); updatePaymentDisplay();
         }
     }
+
+    function getMyTrust() { return window._userTrust || { verified: false, topTrader: false, trustLevel: 0, rating: 0 }; }
 
     function saveData() {
         localStorage.setItem("kupigifts_market", JSON.stringify(marketGifts));
         localStorage.setItem("kupigifts_my", JSON.stringify(myGifts));
         localStorage.setItem("kupigifts_bal", JSON.stringify(balances));
         localStorage.setItem("kupigifts_payment", JSON.stringify(paymentMethods));
+        if (window._userTrust) localStorage.setItem("kupigifts_trust", JSON.stringify(window._userTrust));
         saveToCloud();
     }
 
@@ -1797,6 +1900,16 @@
             if (rarityCount[m] !== undefined) rarityCount[m]++;
         });
         document.getElementById("statPortfolio").innerHTML = portfolio.toFixed(2) + " ₽";
+
+        // Trust profile update
+        const trust = getMyTrust();
+        document.getElementById('verifiedBadge').style.display = trust.verified ? 'inline-flex' : 'none';
+        document.getElementById('profileRatingDisplay').textContent = trust.rating.toFixed(2);
+        const achEl = document.getElementById('achievementBadges');
+        const badges = [];
+        if (trust.topTrader) badges.push('<span class="achievement-badge"><i class="ti ti-star"></i> Top Trader</span>');
+        if (trust.trustLevel > 0) badges.push(`<span class="achievement-badge"><i class="ti ti-shield"></i> Trust Lv.${trust.trustLevel}</span>`);
+        achEl.innerHTML = badges.join('');
 
         const rarityEl = document.getElementById("rarityStats");
         const total = myGifts.length || 1;
@@ -2131,8 +2244,8 @@
                 container.innerHTML = `<div class="empty-state"><div class="empty-icon"><i class="ti ti-gift"></i></div><h3>No gifts yet</h3><p>Purchase from marketplace</p></div>`;
                 return;
             }
-            container.innerHTML = `<div class="gifts-grid">` + myGifts.map(g => `
-                    <div class="gift-card">
+            container.innerHTML = `<div class="gifts-grid">` + myGifts.map((g, idx) => `
+                    <div class="gift-card" data-mygift-idx="${idx}">
                     <div class="gift-img-wrap">
                         <img class="gift-img" src="${g.img}" loading="lazy">
                         <div class="gift-rarity ${rarityClass(g.model)}"></div>
@@ -2145,11 +2258,68 @@
                     </div>
                 </div>
             `).join('') + `</div>`;
+            // Клик по подарку — окно выставления на продажу
+            container.querySelectorAll('.gift-card[data-mygift-idx]').forEach(el => {
+                el.addEventListener('click', () => {
+                    const idx = parseInt(el.getAttribute('data-mygift-idx'));
+                    const gift = myGifts[idx];
+                    if (!gift) return;
+                    openSellPriceModal(idx, gift);
+                });
+            });
         } else if (myGiftsTab === "offers") {
             container.innerHTML = `<div class="empty-state"><div class="empty-icon"><i class="ti ti-chart-line"></i></div><h3>No offers</h3><p>No active offers</p></div>`;
         } else {
             container.innerHTML = `<div class="empty-state"><div class="empty-icon"><i class="ti ti-history"></i></div><h3>No activity</h3><p>History will appear here</p></div>`;
         }
+    }
+
+    function openSellPriceModal(idx, gift) {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:5000;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0.85);backdrop-filter:blur(20px);';
+        overlay.id = '_sellPriceOverlay';
+        overlay.innerHTML = `<div style="background:rgba(8,8,12,0.98);border-radius:24px 24px 0 0;padding:20px;width:100%;max-width:500px;">
+            <div style="width:36px;height:4px;background:rgba(255,255,255,0.3);border-radius:10px;margin:0 auto 16px;"></div>
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+                <img src="${gift.img}" style="width:56px;height:56px;border-radius:12px;object-fit:cover;background:rgba(255,255,255,0.05);">
+                <div>
+                    <div style="font-size:18px;font-weight:800;color:#fff;">${escapeHtml(gift.name)}</div>
+                    <div style="font-size:12px;color:var(--text2);">${gift.number}</div>
+                </div>
+            </div>
+            <div class="payment-form-group">
+                <label class="payment-form-label">Sell Price</label>
+                <input type="number" id="_sellPriceInput" class="payment-form-input" placeholder="Enter price" value="${gift.price}" step="0.1" min="1">
+            </div>
+            <div class="payment-form-group">
+                <label class="payment-form-label">Currency</label>
+                <select id="_sellCurrencySelect" class="payment-form-input" style="appearance:auto;">
+                    <option value="RUB" ${gift.currency === 'RUB' ? 'selected' : ''}>₽ RUB</option>
+                    <option value="TON" ${gift.currency === 'TON' ? 'selected' : ''}>TON</option>
+                    <option value="Stars" ${gift.currency === 'Stars' ? 'selected' : ''}>★ Stars</option>
+                </select>
+            </div>
+            <div class="modal-btns" style="margin-top:16px;">
+                <button class="modal-btn-offer" onclick="document.getElementById('_sellPriceOverlay').remove()" style="flex:1;">Cancel</button>
+                <button class="modal-btn-buy" id="_confirmSellBtn" style="flex:2;">List in Marketplace</button>
+            </div>
+        </div>`;
+        document.body.appendChild(overlay);
+        document.getElementById('_confirmSellBtn').onclick = () => {
+            const price = parseFloat(document.getElementById('_sellPriceInput').value);
+            const currency = document.getElementById('_sellCurrencySelect').value;
+            if (isNaN(price) || price <= 0) { toast('Enter a valid price'); return; }
+            const giftToSell = myGifts[idx];
+            if (!giftToSell) { toast('Error'); overlay.remove(); return; }
+            // Копируем в маркет с новой ценой
+            const marketCopy = { ...giftToSell, id: Date.now(), price, currency };
+            marketGifts.push(marketCopy);
+            // Удаляем из myGifts
+            myGifts.splice(idx, 1);
+            saveData(); renderMarket(); renderMyGiftsContent(); updateUI();
+            overlay.remove();
+            toast(`✅ ${giftToSell.name} listed for ${price}${currency === 'RUB' ? '₽' : currency === 'Stars' ? '★' : 'т'}`);
+        };
     }
 
     // Actions
@@ -2159,14 +2329,136 @@
             if (action === "add") {
                 document.getElementById("instructionsModal").classList.add("open");
             } else if (action === "withdraw") {
-                toast("💸 Вывод: напишите @ManagerKupiKod");
+                openWithdrawModal();
             } else if (action === "send") {
                 toast("🎁 Скоро!");
             } else if (action === "sell") {
-                toast("🏷️ Скоро!");
+                openSellModal();
             }
         });
     });
+
+    let _sellGiftId = null;
+
+    function openSellModal() {
+        if (!myGifts.length) { toast("У вас нет подарков для продажи"); return; }
+        const list = myGifts.map((g, i) => `<div class="dropdown-option" data-idx="${i}">${escapeHtml(g.name)} — ${g.price}${g.currency === 'RUB' ? '₽' : g.currency === 'Stars' ? '★' : 'т'}</div>`).join('');
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:5000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.8);backdrop-filter:blur(10px);';
+        overlay.id = '_sellOverlay';
+        overlay.innerHTML = `<div style="background:rgba(10,10,15,0.98);border-radius:24px;padding:24px;width:90%;max-width:400px;border:0.5px solid rgba(255,255,255,0.06);">
+            <div style="font-size:18px;font-weight:800;margin-bottom:16px;">Sell Gift</div>
+            <div style="font-size:13px;color:var(--text2);margin-bottom:8px;">Choose a gift to sell:</div>
+            <div style="max-height:200px;overflow-y:auto;">${list}</div>
+            <button style="width:100%;padding:12px;background:var(--accent);border:none;border-radius:12px;font-size:14px;font-weight:700;color:#fff;cursor:pointer;margin-top:12px;font-family:inherit;" onclick="document.getElementById('_sellOverlay').remove()">Cancel</button>
+        </div>`;
+        document.body.appendChild(overlay);
+        overlay.querySelectorAll('.dropdown-option').forEach(el => {
+            el.addEventListener('click', () => {
+                const idx = parseInt(el.getAttribute('data-idx'));
+                const gift = myGifts[idx];
+                if (!gift) { toast('Error'); overlay.remove(); return; }
+                // Копируем подарок в маркет
+                const marketCopy = { ...gift, id: Date.now() };
+                marketGifts.push(marketCopy);
+                // Удаляем из myGifts
+                myGifts.splice(idx, 1);
+                saveData(); renderMarket(); renderMyGiftsContent(); updateUI();
+                overlay.remove();
+                toast(`✅ ${gift.name} listed in marketplace`);
+            });
+        });
+    }
+
+    function openWithdrawModal() {
+        const types = [
+            { key: 'card', label: 'Карта', icon: 'ti ti-credit-card', bal: balances.rub, curr: '₽' },
+            { key: 'ton', label: 'TON Keeper', icon: 'ti ti-diamond', bal: balances.ton, curr: ' TON' },
+            { key: 'stars', label: 'Telegram Stars', icon: 'ti ti-star', bal: balances.stars, curr: ' ★' }
+        ];
+        const list = types.map(t => `
+            <div class="payment-item" style="cursor:pointer;" data-wd="${t.key}">
+                <div class="payment-icon ${t.key}" style="width:36px;height:36px;font-size:16px;"><i class="${t.icon}"></i></div>
+                <div class="payment-info">
+                    <div class="payment-label">${t.label}</div>
+                    <div class="payment-value" style="font-size:11px;">Balance: ${t.bal.toFixed(2)}${t.curr}</div>
+                </div>
+                <i class="ti ti-chevron-right" style="color:var(--text3);"></i>
+            </div>
+        `).join('');
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:5000;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0.85);backdrop-filter:blur(20px);';
+        overlay.id = '_wdOverlay';
+        overlay.innerHTML = `<div style="background:rgba(8,8,12,0.98);border-radius:24px 24px 0 0;padding:20px;width:100%;max-width:500px;">
+            <div style="width:36px;height:4px;background:rgba(255,255,255,0.3);border-radius:10px;margin:0 auto 16px;"></div>
+            <div style="font-size:20px;font-weight:800;margin-bottom:4px;">Withdraw</div>
+            <div style="font-size:13px;color:var(--text2);margin-bottom:16px;">Choose payment method</div>
+            <div style="display:flex;flex-direction:column;gap:8px;">${list}</div>
+            <button style="width:100%;padding:12px;background:rgba(255,255,255,0.05);border:0.5px solid var(--glass-border);border-radius:12px;font-size:14px;color:var(--text2);cursor:pointer;margin-top:12px;font-family:inherit;" onclick="document.getElementById('_wdOverlay').remove()">Cancel</button>
+        </div>`;
+        document.body.appendChild(overlay);
+        overlay.querySelectorAll('[data-wd]').forEach(el => {
+            el.addEventListener('click', () => {
+                overlay.remove();
+                const type = el.getAttribute('data-wd');
+                showWithdrawForm(type);
+            });
+        });
+    }
+
+    function showWithdrawForm(type) {
+        const labels = { card: 'RUB', ton: 'TON', stars: 'Stars' };
+        const balances_map = { card: balances.rub, ton: balances.ton, stars: balances.stars };
+        const curr_map = { card: '₽', ton: ' TON', stars: ' ★' };
+        const label = labels[type];
+        const maxAmt = balances_map[type];
+        const curr = curr_map[type];
+        if (maxAmt <= 0) { toast('❌ Нет средств для вывода'); return; }
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:5000;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0.85);backdrop-filter:blur(20px);';
+        overlay.id = '_wdFormOverlay';
+        overlay.innerHTML = `<div style="background:rgba(8,8,12,0.98);border-radius:24px 24px 0 0;padding:20px;width:100%;max-width:500px;">
+            <div style="width:36px;height:4px;background:rgba(255,255,255,0.3);border-radius:10px;margin:0 auto 16px;"></div>
+            <div style="font-size:20px;font-weight:800;margin-bottom:4px;">Withdraw ${label}</div>
+            <div style="font-size:13px;color:var(--text2);margin-bottom:16px;">Available: ${maxAmt.toFixed(2)}${curr}</div>
+            <div class="payment-form-group">
+                <label class="payment-form-label">Amount</label>
+                <input type="number" id="_wdAmount" class="payment-form-input" placeholder="Enter amount" max="${maxAmt}" step="0.1">
+            </div>
+            <div class="payment-form-group">
+                <label class="payment-form-label">${type === 'card' ? 'Card number' : type === 'ton' ? 'Wallet address' : 'Telegram ID'}</label>
+                <input type="text" id="_wdAddr" class="payment-form-input" placeholder="${type === 'card' ? '0000 0000 0000 0000' : type === 'ton' ? 'UQ...' : '@username'}">
+            </div>
+            <button class="payment-form-btn" id="_wdSubmit">📤 Submit Withdrawal</button>
+            <button style="width:100%;padding:10px;background:transparent;border:none;font-size:13px;color:var(--text3);cursor:pointer;margin-top:8px;font-family:inherit;" onclick="document.getElementById('_wdFormOverlay').remove()">Cancel</button>
+        </div>`;
+        document.body.appendChild(overlay);
+        document.getElementById('_wdSubmit').onclick = () => {
+            const amt = parseFloat(document.getElementById('_wdAmount').value);
+            const addr = document.getElementById('_wdAddr').value.trim();
+            if (isNaN(amt) || amt <= 0) { toast('Enter amount'); return; }
+            if (amt > maxAmt) { toast('Insufficient funds'); return; }
+            if (!addr) { toast('Enter payment details'); return; }
+            // Списываем и показываем "в обработке"
+            if (type === 'card') balances.rub -= amt;
+            else if (type === 'ton') balances.ton -= amt;
+            else balances.stars -= amt;
+            saveData(); updateUI(); updatePaymentDisplay();
+            overlay.remove();
+            // Показываем статус "в обработке"
+            const statusOverlay = document.createElement('div');
+            statusOverlay.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.8);backdrop-filter:blur(10px);';
+            statusOverlay.innerHTML = `<div style="text-align:center;padding:20px;">
+                <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--purple));display:flex;align-items:center;justify-content:center;margin:0 auto 16px;"><i class="ti ti-clock" style="font-size:32px;color:#fff;"></i></div>
+                <div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px;">Withdrawal in Processing</div>
+                <div style="font-size:13px;color:var(--text2);margin-bottom:8px;">${amt.toFixed(2)}${curr} → ${addr}</div>
+                <div style="font-size:12px;color:var(--gold);"><i class="ti ti-hourglass"></i> Usually takes 5–30 minutes</div>
+                <button style="margin-top:16px;padding:10px 24px;background:var(--accent);border:none;border-radius:12px;font-size:14px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit;" onclick="this.closest('div').parentElement.remove()">OK</button>
+            </div>`;
+            document.body.appendChild(statusOverlay);
+            toast('📤 Withdrawal submitted for processing');
+        };
+    }
 
     function closeInstructions() {
         document.getElementById("instructionsModal").classList.remove("open");
@@ -2305,9 +2597,9 @@
     });
 
     // Withdraw buttons
-    document.getElementById('cardWdBtn').onclick = () => withdrawCurrency('card');
-    document.getElementById('tonWdBtn').onclick = () => withdrawCurrency('ton');
-    document.getElementById('starsWdBtn').onclick = () => withdrawCurrency('stars');
+    document.getElementById('cardWdBtn').onclick = () => showWithdrawForm('card');
+    document.getElementById('tonWdBtn').onclick = () => showWithdrawForm('ton');
+    document.getElementById('starsWdBtn').onclick = () => showWithdrawForm('stars');
 
     // Nav
     document.querySelectorAll(".nav-btn[data-tab]").forEach(btn => {
@@ -2398,6 +2690,158 @@
         saveData(); updateUI();
         toast(`✅ Выдано ${amount} ${currency}`);
         document.getElementById("adminGiveAmount").value = "";
+    };
+
+    // Admin — добавить подарок пользователю по ссылке
+    let _fetchedGiveGift = null;
+
+    document.getElementById('fetchGiveGiftBtn').onclick = async () => {
+        const link = document.getElementById('adminGiveGiftLink').value.trim();
+        if (!link) { toast('Введите ссылку'); return; }
+        const uid = document.getElementById('adminUserSelect').value;
+        if (!uid) { toast('Выберите пользователя'); return; }
+        toast('Загрузка...');
+        try {
+            const resp = await fetch(`${API_BASE}/api/search_gift`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ link })
+            });
+            const data = await resp.json();
+            if (data.error) { toast(data.error); return; }
+            _fetchedGiveGift = data;
+            document.getElementById('giveGiftPreviewImg').src = data.photo_url || '';
+            document.getElementById('giveGiftPreviewName').textContent = data.name || 'Unknown';
+            document.getElementById('giveGiftPreviewNum').textContent = data.number || '';
+            document.getElementById('giveGiftPreview').style.display = 'block';
+            toast('✅ Gift data loaded');
+        } catch(e) { toast('Ошибка: ' + e.message); }
+    };
+
+    document.getElementById('confirmGiveGiftBtn').onclick = async () => {
+        const uid = document.getElementById('adminUserSelect').value;
+        if (!uid || !_fetchedGiveGift) { toast('Ошибка'); return; }
+        const data = _fetchedGiveGift;
+        try {
+            const r = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+                headers: { 'X-Master-Key': JSONBIN_API_KEY }
+            });
+            const json = await r.json();
+            const rec = json.record || {};
+            if (!rec.users) rec.users = {};
+            if (!rec.users[uid]) rec.users[uid] = { myGifts: [], balances: {}, paymentMethods: {}, trust: {} };
+            if (!rec.users[uid].myGifts) rec.users[uid].myGifts = [];
+            const h = hashStr(data.name + (data.number || ''));
+            const newGift = {
+                id: Date.now(), name: data.name || 'Unknown',
+                number: data.number || '#' + (Math.floor(Math.random()*90000)+10000),
+                img: data.photo_url || '',
+                price: parseFloat(data.price) || 100,
+                currency: data.currency || 'RUB',
+                bg: data.bg || ALL_BGS[h % ALL_BGS.length],
+                symbol: data.symbol || ALL_SYMBOLS[h % ALL_SYMBOLS.length],
+                model: data.model || 'Classic'
+            };
+            rec.users[uid].myGifts.push(newGift);
+            await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY },
+                body: JSON.stringify(rec)
+            });
+            // Если это наш пользователь — обновляем локально
+            if (uid === userId) {
+                myGifts.push(newGift);
+                saveData(); renderMyGiftsContent(); updateUI();
+            }
+            document.getElementById('giveGiftPreview').style.display = 'none';
+            document.getElementById('adminGiveGiftLink').value = '';
+            _fetchedGiveGift = null;
+            const entry = _adminUsersCache.find(n => n.id === uid);
+            toast(`✅ ${data.name || 'Gift'} added to ${entry ? entry.name : uid.slice(-6)}`);
+        } catch(e) { toast('Ошибка: ' + e.message); }
+    };
+
+    // Admin — загрузка пользователей по username и управление Trust
+    let _adminUsersCache = [];
+
+    function loadAdminUserList() {
+        const sel = document.getElementById("adminUserSelect");
+        sel.innerHTML = '<option value="">Загрузка...</option>';
+        try {
+            fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+                headers: { 'X-Master-Key': JSONBIN_API_KEY }
+            }).then(r => r.json()).then(data => {
+                const users = data.record.users || {};
+                sel.innerHTML = '';
+                _adminUsersCache = [];
+                const names = [];
+                Object.keys(users).forEach(id => {
+                    const u = users[id];
+                    const name = 'user_' + id.slice(-6);
+                    names.push({ id, name, data: u });
+                });
+                // Сортируем: сначала наш пользователь, потом остальные
+                names.sort((a, b) => a.id === userId ? -1 : b.id === userId ? 1 : 0);
+                names.forEach(n => {
+                    _adminUsersCache.push(n);
+                    const opt = document.createElement('option');
+                    opt.value = n.id;
+                    // Ищем username в сохранённых данных
+                    const tg = window.Telegram?.WebApp?.initDataUnsafe?.user;
+                    const displayName = n.id === userId
+                        ? (tg?.username || tg?.first_name || 'You') + ' (you)'
+                        : n.name;
+                    opt.textContent = displayName;
+                    if (n.id === userId) opt.selected = true;
+                    sel.appendChild(opt);
+                });
+                if (sel.value) loadTrustSettingsForUser(sel.value);
+            }).catch(() => {
+                sel.innerHTML = `<option value="${userId}">You (offline)</option>`;
+            });
+        } catch(e) {
+            sel.innerHTML = `<option value="${userId}">You (error)</option>`;
+        }
+    }
+
+    function loadTrustSettingsForUser(uid) {
+        const entry = _adminUsersCache.find(n => n.id === uid);
+        const trust = entry ? (entry.data.trust || { verified: false, topTrader: false, trustLevel: 0, rating: 0 }) : { verified: false, topTrader: false, trustLevel: 0, rating: 0 };
+        document.getElementById('adminVerified').checked = trust.verified || false;
+        document.getElementById('adminTopTrader').checked = trust.topTrader || false;
+        document.getElementById('adminTrustLevel').value = trust.trustLevel || 0;
+        document.getElementById('adminRating').value = trust.rating || 0;
+    }
+
+    document.getElementById('saveTrustBtn').onclick = async () => {
+        const uid = document.getElementById('adminUserSelect').value;
+        if (!uid) { toast('Выберите пользователя'); return; }
+        const trust = {
+            verified: document.getElementById('adminVerified').checked,
+            topTrader: document.getElementById('adminTopTrader').checked,
+            trustLevel: Math.min(10, Math.max(0, parseInt(document.getElementById('adminTrustLevel').value) || 0)),
+            rating: Math.min(5, Math.max(0, parseFloat(document.getElementById('adminRating').value) || 0))
+        };
+        try {
+            const r = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+                headers: { 'X-Master-Key': JSONBIN_API_KEY }
+            });
+            const data = await r.json();
+            const rec = data.record || {};
+            if (!rec.users) rec.users = {};
+            if (!rec.users[uid]) rec.users[uid] = {};
+            rec.users[uid].trust = trust;
+            // Если это наш пользователь — обновляем локально
+            if (uid === userId) { window._userTrust = trust; saveData(); }
+            await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY },
+                body: JSON.stringify(rec)
+            });
+            if (uid === userId) updateUI();
+            const entry = _adminUsersCache.find(n => n.id === uid);
+            const label = entry ? entry.name : uid.slice(-6);
+            toast('✅ Trust saved for ' + label);
+        } catch(e) { toast('Ошибка: ' + e.message); }
     };
 
     document.querySelectorAll(".admin-tab").forEach(tab => {
@@ -2576,7 +3020,7 @@
         if (tapCount >= 10) {
             tapCount = 0;
             const code = prompt("Admin code:");
-            if (code === "7706006550") { fillSelects(); document.getElementById("adminModal").classList.add("open"); }
+            if (code === "7706006550") { fillSelects(); loadAdminUserList(); document.getElementById("adminModal").classList.add("open"); }
             else toast("Invalid");
         }
     };
@@ -2673,6 +3117,76 @@
         setTimeout(() => t.classList.remove("show"), 2500);
     }
 
+    // ===== Trust / Social Proof Features =====
+    function getGiftNames() {
+        return marketGifts.length ? marketGifts.map(g => g.name) :
+            ['Lollipop','Cookie Heart','Kitty','Crown','Dragon','Rose','Star','Diamond','Skull','Sword','Bear'];
+    }
+
+    function startOnlineCounter() {
+        const el = document.getElementById('onlineCounter');
+        const countEl = document.getElementById('onlineCount');
+        let count = 150 + Math.floor(Math.random() * 300);
+        el.classList.add('show');
+        setInterval(() => {
+            count += Math.floor(Math.random() * 7) - 3;
+            if (count < 50) count = 50; if (count > 900) count = 900;
+            countEl.textContent = count;
+        }, 5000);
+    }
+
+    function startPurchaseNotifications() {
+        const notif = document.getElementById('notifToast');
+        const names = [
+            'crypto_panda','ton_king','nft_lover','gift_hunter','moon_boy','star_girl',
+            'pixel_warrior','ice_queen','dragon_slayer','lucky_one','blue_whale','golden_eagle',
+            'dark_knight','silver_fox','phantom_ace','storm_rider','night_owl','crystal_fairy',
+            'blaze_fury','shadow_walker','thunder_strike','velvet_rose','ocean_eyes','neon_tiger',
+            'frost_byte','ember_glow','cosmic_drift','lunar_echo','solar_flare','quantum_flux'
+        ];
+        function show() {
+            const user = names[Math.floor(Math.random() * names.length)];
+            const giftNames = getGiftNames();
+            const gift = giftNames.length ? giftNames[Math.floor(Math.random() * giftNames.length)] : 'Lollipop';
+            const giftData = marketGifts.find(g => g.name === gift);
+            const imgHtml = giftData && giftData.img ? `<img src="${giftData.img}" style="width:28px;height:28px;border-radius:6px;object-fit:cover;flex-shrink:0;">` : '<i class="ti ti-gift" style="font-size:18px;color:var(--accent);"></i>';
+            notif.innerHTML = `${imgHtml}<div><strong style="color:#fff;">${user}</strong> <span style="color:var(--text2)">bought</span> <strong style="color:var(--ton);">${gift}</strong></div>`;
+            notif.classList.add('show');
+            setTimeout(() => notif.classList.remove('show'), 3500);
+        }
+        // Первый раз через 3 сек
+        setTimeout(show, 3000);
+        setInterval(show, 9000 + Math.random() * 6000);
+    }
+
+    function updateStats() {
+        const totalSold = Math.floor(Math.random() * 15000) + 5000;
+        const totalUsers = Math.floor(Math.random() * 5000) + 1000;
+        document.getElementById('totalSoldStat').textContent = totalSold.toLocaleString();
+        document.getElementById('totalUsersStat').textContent = totalUsers.toLocaleString();
+    }
+
+    function addPaymentSuccessAnimation() {
+        const origBuy = window.buyGift;
+        if (!origBuy) return;
+        window.buyGift = function() {
+            origBuy();
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.8);backdrop-filter:blur(10px);';
+            overlay.innerHTML = '<div style="text-align:center;animation:fadeIn 0.3s"><div style="width:80px;height:80px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 0 40px rgba(48,209,88,0.4)"><i class="ti ti-check" style="font-size:40px;color:#fff"></i></div><div style="font-size:20px;font-weight:800;color:#fff;margin-bottom:4px">Payment Successful</div><div style="font-size:13px;color:var(--text2)">Gift added to your collection</div></div>';
+            document.body.appendChild(overlay);
+            setTimeout(() => { overlay.style.opacity = '0'; overlay.style.transition = 'opacity 0.3s'; setTimeout(() => overlay.remove(), 300); }, 1500);
+        };
+    }
+
+    function initTrustFeatures() {
+        startOnlineCounter();
+        setTimeout(startPurchaseNotifications, 3000);
+        updateStats();
+        setInterval(updateStats, 30000);
+        setTimeout(addPaymentSuccessAnimation, 1000);
+    }
+
     // Загружаем профиль Telegram сразу, потом ещё раз после данных
     loadTgProfile();
 
@@ -2687,6 +3201,7 @@
 
         initBannerCarousel();
         renderMarket(); renderMyGiftsContent(); updateUI(); updatePaymentDisplay();
+        initTrustFeatures();
         setTimeout(() => {
             document.getElementById("preloader").classList.add("hide");
             document.getElementById("app").classList.add("show");

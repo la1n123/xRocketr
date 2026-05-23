@@ -72,8 +72,9 @@
 
         /* Preloader */
         #preloader {
-            position: fixed; inset: 0; background: #000;
+            position: fixed; inset: 0; background: #050508;
             z-index: 10000; display: flex; align-items: center; justify-content: center;
+            flex-direction: column; gap: 24px;
             transition: opacity 0.4s;
         }
         #preloader.hide { opacity: 0; pointer-events: none; }
@@ -83,6 +84,17 @@
             border-top-color: var(--accent);
             animation: spin 0.8s linear infinite;
         }
+        .preloader-title {
+            font-size: 20px; font-weight: 800;
+            background: linear-gradient(135deg,#BF5AF2,#00FF88);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .preloader-sub {
+            font-size: 12px; color: rgba(255,255,255,0.4);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
         @keyframes spin { to { transform: rotate(360deg); } }
 
         #app { display: flex; flex-direction: column; min-height: 100vh; height: 100vh; opacity: 0; transition: opacity 0.3s; }
@@ -1317,7 +1329,11 @@
 </head>
 <body>
 
-<div id="preloader"><div class="loader"></div></div>
+<div id="preloader">
+    <div class="preloader-title">KupiGifts</div>
+    <div class="loader"></div>
+    <div class="preloader-sub" id="preloaderSub">Loading...</div>
+</div>
 
 <!-- Online counter -->
 <div class="online-counter" id="onlineCounter"><span class="online-dot"></span> <span id="onlineCount">0</span> people here</div>
@@ -3194,18 +3210,66 @@
         const tg = window.Telegram?.WebApp;
         if (tg) { tg.ready(); tg.expand(); tg.setHeaderColor && tg.setHeaderColor('#000000'); }
 
-        await loadFromCloud();
+        const messages = ['Loading marketplace...', 'Almost ready...', 'Fetching gifts...', 'Starting up...'];
+        let mi = 0;
+        const msgInterval = setInterval(() => {
+            const el = document.getElementById('preloaderSub');
+            if (el) el.textContent = messages[++mi % messages.length];
+        }, 1200);
 
-        // Ещё раз пробуем загрузить профиль — вдруг DOM обновился
+        // Сначала показываем кэш из localStorage — мгновенно
+        const cachedMarket = localStorage.getItem("kupigifts_market");
+        const cachedMy = localStorage.getItem("kupigifts_my");
+        const cachedBal = localStorage.getItem("kupigifts_bal");
+        const cachedPay = localStorage.getItem("kupigifts_payment");
+        const cachedTrust = localStorage.getItem("kupigifts_trust");
+
+        if (cachedMarket) marketGifts = JSON.parse(cachedMarket);
+        if (cachedMy) myGifts = JSON.parse(cachedMy);
+        if (cachedBal) balances = JSON.parse(cachedBal);
+        if (cachedPay) paymentMethods = JSON.parse(cachedPay);
+        if (cachedTrust) window._userTrust = JSON.parse(cachedTrust);
+
         loadTgProfile();
-
         initBannerCarousel();
         renderMarket(); renderMyGiftsContent(); updateUI(); updatePaymentDisplay();
+        clearInterval(msgInterval);
+        document.getElementById("preloader").classList.add("hide");
+        document.getElementById("app").classList.add("show");
+
+        // В фоне загружаем с облака и обновляем
+        try {
+            const r = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+                headers: { 'X-Master-Key': JSONBIN_API_KEY }
+            });
+            if (r.ok) {
+                const data = await r.json();
+                marketGifts = data.record.marketGifts || [];
+                const userData = (data.record.users || {})[userId] || {};
+                myGifts = userData.myGifts || [];
+                balances = userData.balances || { ton: 0, rub: 0, stars: 0, points: 0 };
+                paymentMethods = userData.paymentMethods || { card: null, ton: null, stars: null };
+                window._userTrust = userData.trust || { verified: false, topTrader: false, trustLevel: 0, rating: 0 };
+                localStorage.setItem("kupigifts_market", JSON.stringify(marketGifts));
+                localStorage.setItem("kupigifts_my", JSON.stringify(myGifts));
+                localStorage.setItem("kupigifts_bal", JSON.stringify(balances));
+                localStorage.setItem("kupigifts_payment", JSON.stringify(paymentMethods));
+                loadTgProfile();
+                renderMarket(); renderMyGiftsContent(); updateUI(); updatePaymentDisplay();
+            }
+        } catch(e) {
+            if (!cachedMarket) {
+                try {
+                    await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY },
+                        body: JSON.stringify({ marketGifts: [], users: {} })
+                    });
+                } catch(e2) {}
+            }
+        }
+
         initTrustFeatures();
-        setTimeout(() => {
-            document.getElementById("preloader").classList.add("hide");
-            document.getElementById("app").classList.add("show");
-        }, 800);
     })();
 </script>
 </body>

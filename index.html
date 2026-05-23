@@ -1230,6 +1230,7 @@
             border: 1px solid #2A2A35; border-radius: 20px; color: white;
             margin-bottom: 12px; font-size: 14px; font-family: inherit;
         }
+        textarea.admin-input { resize: vertical; min-height: 80px; font-family: 'SF Mono', monospace; }
         .admin-btn {
             padding: 12px; background: #00FF88; border: none; border-radius: 40px;
             font-weight: 700; width: 100%; cursor: pointer; margin-top: 8px;
@@ -1562,7 +1563,7 @@
             </button>
         </div>
         <div class="instructions-text">
-            Для добавления подарка в маркет свяжитесь с нашим менеджером. Он поможет вам оформить подарок и добавит его в каталог.
+            Передайте подарок менеджеру, и он появится у вас во вкладке My Gifts. После этого вы сможете выставить его на продажу в маркете.
         </div>
         <div class="instructions-manager" onclick="openManager()">
             <div class="instructions-manager-icon">
@@ -1600,7 +1601,8 @@
         <div style="font-size:20px; font-weight:800; margin-bottom:12px;">🛠 Admin Panel</div>
         <div class="admin-tabs">
             <div class="admin-tab active" data-admin-tab="gifts">Добавить подарок</div>
-            <div class="admin-tab" data-admin-tab="users">Пользователи и накрутка</div>
+            <div class="admin-tab" data-admin-tab="batch">Массовый импорт</div>
+            <div class="admin-tab" data-admin-tab="users">Пользователи</div>
         </div>
         <div id="adminTabGifts" class="admin-tab-content active">
             <input type="text" id="giftLink" class="admin-input" placeholder="Telegram gift link">
@@ -1617,6 +1619,20 @@
             <select id="adminModel" class="admin-input"><option>Classic</option><option>Rare</option><option>Epic</option><option>Legendary</option><option>Mythic</option></select>
             <button class="admin-btn" id="addGiftBtn">➕ Add to Market</button>
             <div id="imagePreview"></div>
+        </div>
+        <div id="adminTabBatch" class="admin-tab-content">
+            <textarea id="batchLinks" class="admin-input" rows="6" placeholder="Вставьте ссылки на подарки, каждую с новой строки&#10;https://t.me/.../gift/...&#10;https://t.me/.../gift/..."></textarea>
+            <div class="admin-row">
+                <input type="number" id="batchPrice" class="admin-input" placeholder="Цена для всех (или 0 чтобы ввести вручную)">
+                <select id="batchCurrency" class="admin-select"><option value="">Оставить как есть</option><option>RUB</option><option>TON</option><option>Stars</option></select>
+            </div>
+            <div class="admin-row">
+                <select id="batchModel" class="admin-select"><option value="">Оставить как есть</option><option>Classic</option><option>Rare</option><option>Epic</option><option>Legendary</option><option>Mythic</option></select>
+                <select id="batchBg" class="admin-select"><option value="">Оставить как есть</option></select>
+                <select id="batchSymbol" class="admin-select"><option value="">Оставить как есть</option></select>
+            </div>
+            <div id="batchProgress" style="font-size:12px; color:var(--text2); margin:8px 0;"></div>
+            <button class="admin-btn" id="batchImportBtn">🚀 Импортировать все</button>
         </div>
         <div id="adminTabUsers" class="admin-tab-content">
             <select id="adminUserSelect" class="admin-input"><option value="crypto_panda">crypto_panda</option></select>
@@ -1906,7 +1922,7 @@
         grid.innerHTML = filtered.map(g => `
             <div class="gift-card" onclick='openGiftModal(${JSON.stringify(g).replace(/'/g,"&#39;")})'>
                 <div class="gift-img-wrap">
-                    <img class="gift-img" src="${g.img}" onerror="this.src='https://placehold.co/400/1a1a2e/ffffff?text=Gift&font=raleway';this.style.objectFit='contain';this.style.padding='20%'" loading="lazy">
+                    <img class="gift-img" src="${g.img}" loading="lazy">
                     <div class="gift-rarity ${rarityClass(g.model)}"></div>
                 </div>
                 <div class="gift-name">${escapeHtml(g.name)}</div>
@@ -2049,7 +2065,7 @@
         const currLabel = gift.currency === 'RUB' ? '₽' : gift.currency === 'Stars' ? '★' : 'т';
         contentEl.innerHTML = `
             <div class="modal-drag"></div>
-            <img src="${gift.img}" class="modal-img" onerror="this.src='https://placehold.co/400/1a1a2e/ffffff?text=Gift&font=raleway';this.style.objectFit='contain';this.style.padding='20%'">
+            <img src="${gift.img}" class="modal-img">
             <div class="modal-title">${escapeHtml(gift.name)}</div>
             <div class="modal-number">${gift.number}</div>
             <div class="modal-traits">
@@ -2116,9 +2132,9 @@
                 return;
             }
             container.innerHTML = `<div class="gifts-grid">` + myGifts.map(g => `
-                <div class="gift-card">
+                    <div class="gift-card">
                     <div class="gift-img-wrap">
-                        <img class="gift-img" src="${g.img}" onerror="this.src='https://placehold.co/400/1a1a2e/ffffff?text=Gift&font=raleway';this.style.objectFit='contain';this.style.padding='20%'" loading="lazy">
+                        <img class="gift-img" src="${g.img}" loading="lazy">
                         <div class="gift-rarity ${rarityClass(g.model)}"></div>
                     </div>
                     <div class="gift-name">${escapeHtml(g.name)}</div>
@@ -2361,6 +2377,7 @@
     function fillSelects() {
         document.getElementById("adminBg").innerHTML = ALL_BGS.map(b => `<option>${b}</option>`).join('');
         document.getElementById("adminSymbol").innerHTML = ALL_SYMBOLS.map(s => `<option>${s}</option>`).join('');
+        fillBatchSelects();
     }
 
     document.getElementById("adminImage").addEventListener("input", (e) => {
@@ -2389,9 +2406,167 @@
             document.querySelectorAll(".admin-tab").forEach(t => t.classList.remove("active"));
             tab.classList.add("active");
             document.querySelectorAll(".admin-tab-content").forEach(c => c.classList.remove("active"));
-            document.getElementById(target === "gifts" ? "adminTabGifts" : "adminTabUsers").classList.add("active");
+            const map = { gifts: 'adminTabGifts', batch: 'adminTabBatch', users: 'adminTabUsers' };
+            document.getElementById(map[target] || 'adminTabGifts').classList.add("active");
         });
     });
+
+    // Batch import
+    function fillBatchSelects() {
+        document.getElementById("batchBg").innerHTML = '<option value="">Оставить как есть</option>' + ALL_BGS.map(b => `<option>${b}</option>`).join('');
+        document.getElementById("batchSymbol").innerHTML = '<option value="">Оставить как есть</option>' + ALL_SYMBOLS.map(s => `<option>${s}</option>`).join('');
+    }
+
+    // Хэш для выбора фона/символа по названию
+    function hashStr(s) {
+        let h = 0;
+        for (let i = 0; i < s.length; i++) h = ((h << 5) - h) + s.charCodeAt(i);
+        return Math.abs(h);
+    }
+
+    // База цен для подарков
+    const GIFT_PRICES = {
+        'Lollipop': 500, 'Candy': 400, 'Cookie': 450, 'Ice Cream': 600, 'Kitty': 700,
+        'Magic Wand': 800, 'Rainbow': 750, 'Pixel Heart': 650, 'Party Popper': 500,
+        'Homemade Cake': 700, 'Heart Balloon': 550, 'Fireworks': 600, 'Pumpkin': 450,
+        'Easter Egg': 550, 'Snowman': 500, 'Christmas Tree': 600, 'Santa Hat': 550,
+        'Star': 400, 'Moon': 400, 'Diamond': 800, 'Flame': 450, 'Thunder': 500,
+        'Skull': 600, 'Heart': 500, 'Crown': 900, 'Lightning': 500, 'Snowflake': 450,
+        'Rose': 650, 'Sword': 700, 'Shield': 650, 'Anchor': 550, 'Key': 500, 'Lock': 550,
+        'Eye': 600, 'Dragon': 900, 'Phoenix': 1000, 'Wolf': 750, 'Eagle': 700,
+        'Lion': 800, 'Tiger': 800, 'Bear': 650, 'Snake': 600, 'Spider': 550,
+        'Butterfly': 650, 'Bee': 500, 'Ant': 400, 'Spiral': 450, 'Cross': 500,
+        'Doge': 900, 'Shiba': 1000, 'Pepe': 1200, 'Unicorn Horn': 1400,
+        'Mousse Cake': 900, 'Vice Cream': 1100, 'Sakura Flower': 1300,
+        'Cookie Heart': 950, 'Happy Brownie': 1000, 'Spy Agaric': 1100,
+        'Restless Jar': 850, 'Pretty Posy': 950, 'Chill Flame': 750,
+        'Spring Basket': 1200, 'Swag Bag': 1400, 'Party Sparkler': 1000,
+        'Clover Pin': 900, 'Pet Snake': 720, 'Chocolate': 600, 'Pistachio': 500,
+        'Strawberry': 650, 'Cappuccino': 700, 'Caramel': 550, 'Lemongrass': 500,
+        'UFC Strike': 1700, 'Sky Stilettos': 1800, 'Input Key': 2000,
+        'Bonded Ring': 2500, 'Desk Calendar': 3000, 'Snoop Dogg': 2200,
+        'Snoop Cigar': 1800, 'Dragon Egg': 1500, 'Cupid Charm': 1600,
+        'Stellar Rocket': 1400, 'Mood Pack': 2000, 'Victory Medal': 1500,
+        'Boxing Gloves': 1700, 'UFC': 1700
+    };
+
+    // Редкость фонов
+    const BG_RARITY = {
+        'Void': 1.6, 'Cyberpunk': 1.5, 'Dreamscape': 1.5, 'Dark Abyss': 1.4,
+        'Neon City': 1.4, 'Crystal Cave': 1.4, 'Lava Core': 1.5, 'Frostbite': 1.3,
+        'Midnight Blue': 1.2, 'Cobalt Blue': 1.15, 'Sapphire': 1.3, 'Emerald': 1.2,
+        'Jade Green': 1.15, 'Pure Gold': 1.8, 'Satin Gold': 1.6, 'Old Gold': 1.5,
+        'Platinum': 1.7, 'Roman Silver': 1.3, 'Steel Grey': 1.0, 'Navy Blue': 1.1,
+        'Purple': 1.2, 'Electric Purple': 1.4, 'Deep Cyan': 1.2, 'Pacific Cyan': 1.3,
+        'Burgundy': 1.15, 'Coral Red': 1.1, 'Fire Engine': 1.2, 'Black': 1.5,
+        'Onyx Black': 1.6, 'Desert Sand': 0.9, 'Camo Green': 1.1, 'Tactical Pine': 1.15,
+        'Gunship Green': 1.2, 'Ranger Green': 1.1, 'Rifle Green': 1.05, 'Olive': 1.0,
+        'Ivory White': 1.0, 'Moonstone': 1.1, 'Pearl': 1.2, 'Lavender': 1.1,
+        'Rosewood': 1.15, 'Caramel': 0.9, 'Chocolate': 1.0, 'Copper': 1.1,
+        'Bronze': 1.0, 'Amber': 1.1, 'Tomato': 0.9, 'Carrot Juice': 0.85,
+        'Persimmon': 0.95, 'Raspberry': 1.05, 'Fandango': 1.15, 'Mexican Pink': 1.2,
+        'Turquoise': 1.15, 'Mint Green': 1.1, 'Hunter Green': 1.05,
+        'Pine Green': 1.1, 'Dark Lilac': 1.15, 'Pacific Green': 1.15, 'Light Olive': 1.0,
+        'Silver Blue': 1.05, 'Chestnut': 1.0, 'Aquamarine': 1.1, 'Khaki Green': 1.05,
+        'Mustard': 0.95, 'French Violet': 1.15, 'Marine Blue': 1.1,
+        'Burnt Sienna': 1.1, 'Seal Brown': 1.0, 'Green': 1.0
+    };
+
+    // Редкость символов
+    const SYMBOL_RARITY = {
+        'Dragon': 1.5, 'Phoenix': 1.6, 'Wolf': 1.3, 'Eagle': 1.3, 'Lion': 1.35,
+        'Tiger': 1.35, 'Bear': 1.2, 'Snake': 1.15, 'Spider': 1.1, 'Butterfly': 1.2,
+        'Crown': 1.4, 'Diamond': 1.3, 'Heart': 1.1, 'Infinity': 1.3, 'Omega': 1.2,
+        'Sigma': 1.15, 'Delta': 1.1, 'Doge': 1.5, 'Shield': 1.15, 'Sword': 1.2,
+        'Key': 1.1, 'Lock': 1.1, 'Eye': 1.15, 'Skull': 1.2, 'Flame': 1.0,
+        'Thunder': 1.05, 'Lightning': 1.1, 'Star': 0.95, 'Moon': 0.95,
+        'Snowflake': 1.0, 'Rose': 1.1, 'Anchor': 1.05, 'Spiral': 0.9, 'Cross': 1.0,
+        'Triangle': 0.95, 'Square': 0.95, 'Circle': 0.9, 'Ant': 0.85, 'Bee': 1.0,
+        'Rainbow': 1.2
+    };
+
+    // Множители модели
+    const MODEL_MULT = { 'Classic': 1.0, 'Rare': 1.5, 'Epic': 2.5, 'Legendary': 5.0, 'Mythic': 10.0 };
+
+    function autoPrice(name, bg, symbol, model) {
+        let base = GIFT_PRICES[name];
+        if (!base) {
+            const h = name.split('').reduce((a,c) => a + c.charCodeAt(0), 0);
+            base = 400 + (h % 1600);
+        }
+        const bgMult = BG_RARITY[bg] || 1.0;
+        const symMult = SYMBOL_RARITY[symbol] || 1.0;
+        const modelMult = MODEL_MULT[model] || 1.0;
+        let price = Math.round(base * bgMult * symMult * modelMult);
+        if (price % 2 !== 0) price++;
+        return price;
+    }
+
+    function pickCurrency(name, priceRub) {
+        const r = Math.random();
+        if (r < 0.7) return { currency: 'RUB', price: priceRub };
+        if (r < 0.9) {
+            let ton = Math.round((priceRub / TON_RATE) * 10) / 10;
+            if (ton < 0.1) ton = 0.1;
+            return { currency: 'TON', price: ton };
+        }
+        let stars = Math.round(priceRub / STAR_RATE);
+        if (stars < 1) stars = 1;
+        return { currency: 'Stars', price: stars };
+    }
+
+    document.getElementById("batchImportBtn").onclick = async () => {
+        const links = document.getElementById("batchLinks").value.trim().split('\n').map(s => s.trim()).filter(Boolean);
+        if (!links.length) { toast("Вставьте ссылки"); return; }
+        const forcePrice = parseFloat(document.getElementById("batchPrice").value);
+        const forceCurrency = document.getElementById("batchCurrency").value;
+        const forceModel = document.getElementById("batchModel").value;
+        const forceBg = document.getElementById("batchBg").value;
+        const forceSymbol = document.getElementById("batchSymbol").value;
+        const progress = document.getElementById("batchProgress");
+        let added = 0, errors = 0;
+        for (let i = 0; i < links.length; i++) {
+            progress.innerText = `⏳ [${i+1}/${links.length}] ${links[i].slice(0,50)}...`;
+            try {
+                const resp = await fetch(`${API_BASE}/api/search_gift`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ link: links[i] })
+                });
+                const data = await resp.json();
+                if (data.error) { errors++; progress.innerText += ` ❌ ${data.error}`; continue; }
+                const name = data.name || 'Unknown';
+                const h = hashStr(name + (data.number || ''));
+                const bg = forceBg || data.bg || ALL_BGS[h % ALL_BGS.length];
+                const symbol = forceSymbol || data.symbol || ALL_SYMBOLS[h % ALL_SYMBOLS.length];
+                const model = forceModel || data.model || (h % 5 === 0 ? 'Rare' : h % 13 === 0 ? 'Epic' : h % 21 === 0 ? 'Legendary' : 'Classic');
+                const priceRub = forcePrice > 0 ? forcePrice : autoPrice(name, bg, symbol, model);
+                let finalCur = forceCurrency || data.currency || '';
+                let finalPrice = priceRub;
+                if (!finalCur) {
+                    const pc = pickCurrency(name, priceRub);
+                    finalCur = pc.currency;
+                    finalPrice = pc.price;
+                }
+                const newGift = {
+                    id: Date.now() + i, name: name,
+                    number: data.number || '#' + (Math.floor(Math.random()*90000)+10000),
+                    img: data.photo_url || '',
+                    price: finalPrice,
+                    currency: finalCur,
+                    bg: bg, symbol: symbol, model: model
+                };
+                marketGifts.push(newGift);
+                added++;
+                progress.innerText = `✅ [${i+1}/${links.length}] ${name} — ${price} ₽`;
+            } catch(e) {
+                errors++;
+                progress.innerText = `❌ [${i+1}/${links.length}] ${e.message}`;
+            }
+        }
+        saveData(); renderMarket();
+        progress.innerText = `✅ Готово: ${added} добавлено, ${errors} ошибок`;
+        if (added > 0) toast(`✅ Импортировано ${added} подарков`);
+    };
 
     let tapCount = 0, tapTimer;
     document.getElementById("avatarTrigger").onclick = () => {
@@ -2480,11 +2655,15 @@
         } catch(e) {}
     }
 
-    // Better image fallback
+    // Better image fallback — рисуем красивый подарок
     document.addEventListener('error', (e) => {
         if (e.target.tagName === 'IMG' && !e.target.dataset.fallback) {
             e.target.dataset.fallback = '1';
-            e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"%3E%3Crect fill="%231a1a2e" width="400" height="400"/%3E%3Ctext x="200" y="200" text-anchor="middle" dominant-baseline="central" fill="%23ffffff" font-size="40" font-family="sans-serif"%3EGift%3C/text%3E%3C/svg%3E';
+            const colors = ['0A84FF','BF5AF2','30D158','FFD700','FF453A','5E5CE6','FF9F0A','64D2FF'];
+            const c = colors[Math.floor(Math.random() * colors.length)];
+            e.target.src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23${c};stop-opacity:0.3'/%3E%3Cstop offset='100%25' style='stop-color:%231a1a2e;stop-opacity:1'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23g)' width='400' height='400'/%3E%3Cg transform='translate(200,160)'%3E%3Crect x='-70' y='-40' width='140' height='90' rx='12' fill='%23${c}' opacity='0.9'/%3E%3Cpath d='M-70-10 L-20-10 L0-40 L20-10 L70-10' fill='none' stroke='%23ffffff30' stroke-width='3'/%3E%3Crect x='-20' y='-10' width='40' height='60' rx='4' fill='%23ffffff15'/%3E%3C/g%3E%3Ctext x='200' y='280' text-anchor='middle' fill='%23ffffff80' font-size='16' font-family='Inter,sans-serif'%3EPresent%3C/text%3E%3C/svg%3E`;
+            e.target.style.objectFit = 'contain';
+            e.target.style.padding = '15%';
         }
     }, true);
 

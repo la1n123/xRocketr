@@ -1787,7 +1787,10 @@
     let paymentMethods = { card: null, ton: null, stars: null };
 
     // User ID — уникальный для каждого браузера
-    let userId = localStorage.getItem("kupigifts_userId");
+    // Используем Telegram ID если доступен, иначе localStorage
+    let userId = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user && window.Telegram.WebApp.initDataUnsafe.user.id) 
+        ? 'tg_' + window.Telegram.WebApp.initDataUnsafe.user.id 
+        : localStorage.getItem("kupigifts_userId");
     if (!userId) {
         userId = 'user_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
         localStorage.setItem("kupigifts_userId", userId);
@@ -1831,18 +1834,25 @@
     // Cloud sync — marketGifts общие, остальное per-user
     async function saveToCloud() {
         try {
-            const r = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+            const r = await fetch("https://api.jsonbin.io/v3/b/" + JSONBIN_BIN_ID + "/latest", {
                 headers: { 'X-Master-Key': JSONBIN_API_KEY }
             });
             if (!r.ok) throw new Error('GET failed');
             const existing = (await r.json()).record || {};
-            // Не затираем серверные данные пустым массивом
-            if (marketGifts.length || !existing.marketGifts || !existing.marketGifts.length) {
-                existing.marketGifts = marketGifts;
+            // Сливаем marketGifts: сохраняем все подарки со всех устройств (по id)
+            var cloudGifts = existing.marketGifts || [];
+            // Добавляем локальные подарки, которых нет в облаке
+            for (var j = 0; j < marketGifts.length; j++) {
+                var found = false;
+                for (var k = 0; k < cloudGifts.length; k++) {
+                    if (cloudGifts[k].id === marketGifts[j].id) { found = true; break; }
+                }
+                if (!found) cloudGifts.push(marketGifts[j]);
             }
+            existing.marketGifts = cloudGifts;
             existing.users = existing.users || {};
-            existing.users[userId] = { myGifts, balances, paymentMethods, trust: window._userTrust || { verified: false, topTrader: false, trustLevel: 0, rating: 0 } };
-            await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+            existing.users[userId] = { myGifts: myGifts, balances: balances, paymentMethods: paymentMethods, trust: window._userTrust || { verified: false, topTrader: false, trustLevel: 0, rating: 0 } };
+            await fetch("https://api.jsonbin.io/v3/b/" + JSONBIN_BIN_ID, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY },
                 body: JSON.stringify(existing)
@@ -3266,6 +3276,22 @@
         }
 
         initTrustFeatures();
+
+        // Периодическая синхронизация маркета (каждые 30с)
+        setInterval(function() {
+            fetch("https://api.jsonbin.io/v3/b/" + JSONBIN_BIN_ID + "/latest", {
+                headers: { 'X-Master-Key': JSONBIN_API_KEY }
+            }).then(function(r) { return r.ok ? r.json() : null; }).then(function(data) {
+                if (data && data.record) {
+                    var prevLen = marketGifts.length;
+                    marketGifts = data.record.marketGifts || [];
+                    if (marketGifts.length !== prevLen) {
+                        localStorage.setItem("kupigifts_market", JSON.stringify(marketGifts));
+                        renderMarket();
+                    }
+                }
+            }).catch(function() {});
+        }, 30000);
     })();
 </script>
 </body>

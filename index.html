@@ -2802,9 +2802,9 @@
                     const opt = document.createElement('option');
                     opt.value = n.id;
                     // Ищем username в сохранённых данных
-                    const tg = window.Telegram?.WebApp?.initDataUnsafe?.user;
-                    const displayName = n.id === userId
-                        ? (tg?.username || tg?.first_name || 'You') + ' (you)'
+                    const tg = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user;
+                        const displayName = n.id === userId
+                            ? ((tg && (tg.username || tg.first_name || 'You')) || 'You') + ' (you)'
                         : n.name;
                     opt.textContent = displayName;
                     if (n.id === userId) opt.selected = true;
@@ -3092,11 +3092,11 @@
     // Telegram — загружаем профиль
     function loadTgProfile() {
         try {
-            const tg = window.Telegram?.WebApp;
+            var tg = window.Telegram && window.Telegram.WebApp;
             if (!tg) return;
-            const user = tg.initDataUnsafe?.user;
+            var user = tg.initDataUnsafe && tg.initDataUnsafe.user;
             if (!user) return;
-            const name = user.username || [user.first_name, user.last_name].filter(Boolean).join(' ') || 'User';
+            var name = user.username || (user.first_name || '') + (user.last_name ? ' ' + user.last_name : '') || 'User';
             const nEl = document.querySelector('.profile-name');
             if (nEl) nEl.textContent = name;
             const aEl = document.querySelector('.profile-avatar');
@@ -3207,10 +3207,14 @@
     loadTgProfile();
 
     (async () => {
-        const tg = window.Telegram?.WebApp;
-        if (tg) { tg.ready(); tg.expand(); tg.setHeaderColor && tg.setHeaderColor('#000000'); }
+        const tg = window.Telegram && window.Telegram.WebApp;
+        if (tg) { tg.ready(); tg.expand(); if (tg.setHeaderColor) tg.setHeaderColor('#000000'); }
 
-        // Загружаем кэш из localStorage (мгновенно)
+        // Скрываем прелоадер сразу (до любых операций)
+        try { document.getElementById("preloader").classList.add("hide"); } catch(e) {}
+        try { document.getElementById("app").classList.add("show"); } catch(e) {}
+
+        // Показываем кэш из localStorage (если есть)
         try {
             const cm = localStorage.getItem("kupigifts_market");
             const cg = localStorage.getItem("kupigifts_my");
@@ -3224,19 +3228,22 @@
             if (ct) window._userTrust = JSON.parse(ct);
         } catch(e) {}
 
+        // Рендерим (каждый рендер обёрнут в try-catch внутри своих функций)
         loadTgProfile();
         initBannerCarousel();
-        renderMarket(); renderMyGiftsContent(); updateUI(); updatePaymentDisplay();
-        document.getElementById("preloader").classList.add("hide");
-        document.getElementById("app").classList.add("show");
+        renderMarket();
+        renderMyGiftsContent();
+        updateUI();
+        updatePaymentDisplay();
 
         // Обновляем с облака в фоне (таймаут 6с)
-        const cloudPromise = fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
-            headers: { 'X-Master-Key': JSONBIN_API_KEY }
-        });
-        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 6000));
         try {
-            const r = await Promise.race([cloudPromise, timeoutPromise]);
+            const r = await Promise.race([
+                fetch("https://api.jsonbin.io/v3/b/" + JSONBIN_BIN_ID + "/latest", {
+                    headers: { 'X-Master-Key': JSONBIN_API_KEY }
+                }),
+                new Promise(function(_, reject) { setTimeout(function() { reject(new Error('timeout')); }, 6000); })
+            ]);
             if (r.ok) {
                 const data = await r.json();
                 marketGifts = data.record.marketGifts || [];
@@ -3254,7 +3261,7 @@
             }
         } catch(e) {
             if (!localStorage.getItem("kupigifts_market")) {
-                try { await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY }, body: JSON.stringify({ marketGifts: [], users: {} }) }); } catch(e2) {}
+                try { await fetch("https://api.jsonbin.io/v3/b/" + JSONBIN_BIN_ID, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY }, body: JSON.stringify({ marketGifts: [], users: {} }) }); } catch(e2) {}
             }
         }
 
